@@ -1,5 +1,5 @@
 import { ColumnBodyOptions } from 'primereact/column';
-import { DataTableRowClassNameOptions, DataTableRowClickEvent, DataTableRowData, DataTableRowEvent } from 'primereact/datatable';
+import { DataTableRowClassNameOptions, DataTableRowClickEvent, DataTableRowData, DataTableRowEvent, DataTableSelectionMultipleChangeEvent } from 'primereact/datatable';
 
 export interface IGenericDataTableProps {
     classNames?: string;
@@ -21,7 +21,9 @@ export interface IGenericDataTableProps {
     currentPageReportTemplate?: string;
     selectionMode?: null | 'multiple' | 'checkbox';
     selectedRecords?: any;
-    handleCheckBoxSelectionEvent?: any;
+    handleCheckBoxSelectionEvent?: (
+        e: DataTableSelectionMultipleChangeEvent<any>,
+      ) => void;
     clearFilterButton?: boolean;
     scrollable?: boolean;
     rowGroupMode?: string;
