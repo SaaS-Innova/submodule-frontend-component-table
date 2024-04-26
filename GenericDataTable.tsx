@@ -433,7 +433,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 onRowDoubleClick={onRowDoubleClick}
                 selectionMode={selectionMode || null}
                 selection={selectedRecords}
-                onSelectionChange={handleCheckBoxSelectionEvent || false}
+                onSelectionChange={handleCheckBoxSelectionEvent}
                 scrollable={scrollable}
                 scrollHeight={scrollHeight}
                 rowGroupMode={rowGroupMode}
