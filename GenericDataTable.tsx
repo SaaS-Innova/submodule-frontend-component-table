@@ -4,7 +4,7 @@ import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IColumn, IGenericDataTableProps } from './dataTable.model';
-import { addLocale, FilterMatchMode, FilterOperator, locale } from 'primereact/api';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import autoTable from 'jspdf-autotable';
 import AppButton from '../button/AppButton';
 import { MultiSelect } from 'primereact/multiselect';
