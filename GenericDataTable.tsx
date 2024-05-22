@@ -66,7 +66,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     onRowToggle,
     headerDropdown,
     handleDropdownChange,
-    componentNameForSelectingColumns,
     globalSearchValue,
     onRowDoubleClick,
     onRowExpand,
@@ -75,9 +74,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     reorderableColumns,
     reorderableRows,
     onRowReorder,
-    filterService,
+    visibleColumn
   } = props;
-
+  const {componentNameForSelectingColumns, filterService} = visibleColumn || {};
   const [filters, setFilters] = useState({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
   });
@@ -96,7 +95,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         filterService.getComponentValue(componentName).then((res: any) => {
           if (res && res.length > 0) {
             let cols = columns.filter((col: IColumn) =>
-              res.some((resCol: IColumn) => resCol.field === col.field)
+              res.some((resCol:string) => resCol === col.field)
             );
             setVisibleColumns(cols);
           } else {
@@ -306,11 +305,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         selectedColumns.some((sCol: any) => sCol.field === col.field) ||
         col.filter
     );
+    const fieldNames = orderedSelectedColumns.map((col) => { return col.field});
     componentNameForSelectingColumns &&
       filterService &&
       filterService.setComponentValue(
         componentNameForSelectingColumns,
-        orderedSelectedColumns
+        fieldNames
       );
     setVisibleColumns(orderedSelectedColumns);
   };

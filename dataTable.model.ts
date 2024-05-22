@@ -47,7 +47,6 @@ export interface IGenericDataTableProps {
     rowClassName?: (data: DataTableRowData<any>, options: DataTableRowClassNameOptions<any>) => object | string;
     expandedRows?: any;
     onRowToggle?: any;
-    componentNameForSelectingColumns?: string;
     globalSearchValue?: { value: string };
     onRowExpand?: (e: DataTableRowEvent) => void;
     onRowCollapse?: (e: DataTableRowEvent) => void;
@@ -56,7 +55,11 @@ export interface IGenericDataTableProps {
     reorderableColumns?: boolean;
     reorderableRows?: boolean;
     onRowReorder?: (e: any) => void;
-    filterService?: any
+    visibleColumn?: IvisibleColumnsProps;
+}
+interface IvisibleColumnsProps {
+    componentNameForSelectingColumns: string;
+    filterService: any
 }
 export interface IColumn {
     field: string;
