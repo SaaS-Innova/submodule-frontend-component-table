@@ -486,17 +486,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     The data is then passed to the onClickIcon function.
 
     */
-  window.addEventListener("message", function (event) {
-    if (
-      (event?.currentTarget as Window)?.location?.href == window.location.href
-    ) {
-      if (typeof event.data === "object" && event.data?.id) {
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        typeof event.data === "object" &&
+        typeof event.data?.id === "number"
+      ) {
         if (onClickIcon) {
           onClickIcon(event.data);
         }
       }
-    }
-  });
+    };
+    window.addEventListener("message", handleMessage);
+    // Cleanup: remove event listener when the component unmounts
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
 
   const handleClickIcon = (
     rowData: any,
