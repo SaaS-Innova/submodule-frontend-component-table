@@ -158,6 +158,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <Column
           key={index}
           className={`${col.className} `}
+          selectionMode={col?.selectionMode}
           style={col.style}
           field={col.field}
           header={col.header}
@@ -629,7 +630,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
         )}
         {isColumnDefined &&
-          rowExpansionTemplate &&
           !dataLoading &&
           onClickIcon && (
             <Column
