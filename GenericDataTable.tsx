@@ -95,7 +95,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         filterService.getComponentValue(componentName).then((res: any) => {
           if (res && res.length > 0) {
             let cols = columns.filter((col: IColumn) =>
-              res.some((resCol:string) => resCol === col.field)
+              res.some((resCol: IColumn) => resCol.field === col.field)
             );
             setVisibleColumns(cols);
           } else {
@@ -305,15 +305,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         selectedColumns.some((sCol: any) => sCol.field === col.field) ||
         col.filter
     );
-    const fieldNames = orderedSelectedColumns.map((col) => { return col.field});
     componentNameForSelectingColumns &&
       filterService &&
       filterService.setComponentValue(
         componentNameForSelectingColumns,
-        fieldNames
+        orderedSelectedColumns
       );
     setVisibleColumns(orderedSelectedColumns);
   };
+
   const searchList = (event: { query: string }) => {
     setTimeout(() => {
       let _suggestionsList: any;
