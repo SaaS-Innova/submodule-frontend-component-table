@@ -71,4 +71,5 @@ export interface IColumn {
     className?: string;
     style?: any;
     hidden?: boolean;
+    selectionMode?: 'multiple' | 'single' | undefined;
 }
