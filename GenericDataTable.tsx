@@ -1,13 +1,17 @@
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
+import { DataTable, DataTableStateEvent } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { IColumn, IGenericDataTableProps } from "./dataTable.model";
+import {
+  IColumn,
+  IColumnSort,
+  IGenericDataTableProps,
+} from "./dataTable.model";
 import { FilterMatchMode, FilterOperator } from "primereact/api";
 import autoTable from "jspdf-autotable";
 import AppButton from "../button/AppButton";
-import { MultiSelect } from "primereact/multiselect";
+import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
 import { AutoComplete } from "primereact/autocomplete";
 import { Skeleton } from "primereact/skeleton";
 import _ from "lodash";
@@ -74,9 +78,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     reorderableColumns,
     reorderableRows,
     onRowReorder,
-    visibleColumn
+    visibleColumn,
   } = props;
-  const {componentNameForSelectingColumns, filterService} = visibleColumn || {};
+  const {
+    componentNameForSelectingColumns,
+    filterService,
+    isStoreSorting = false,
+  } = visibleColumn || {};
   const [filters, setFilters] = useState({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
   });
@@ -89,6 +97,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
     FILTER_LEVELS.NORMAL_SEARCH
   );
+  const [selectedSortData, setSelectedSortData] = useState<IColumnSort>({
+    field: sortField || sortField === "" ? sortField : "id",
+    order: sortOrder || 1,
+  });
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
       filterService &&
@@ -98,6 +110,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               res.some((resCol: IColumn) => resCol.field === col.field)
             );
             setVisibleColumns(cols);
+            const selectedSortField = res.find(
+              (col: IColumn) => col?.sortOrder
+            );
+            if (selectedSortField) {
+              setSelectedSortData({
+                field: selectedSortField?.field,
+                order: selectedSortField?.sortOrder,
+              });
+            }
           } else {
             setVisibleColumns(columns);
           }
@@ -299,20 +320,63 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
   };
 
-  const onColumnToggle = (event: any) => {
-    let selectedColumns = event.value;
+  const updateSortOrder = (columns: IColumn[], sortData: IColumnSort) => {
+    return columns.map((col) => {
+      if (col.field === sortData.field) {
+        return { ...col, sortOrder: sortData.order };
+      }
+      return col;
+    });
+  };
+
+  const onColumnToggle = (event: MultiSelectChangeEvent) => {
+    const selectedColumns = event.value;
     let orderedSelectedColumns = columns.filter(
       (col) =>
         selectedColumns.some((sCol: any) => sCol.field === col.field) ||
         col.filter
     );
+
+    setVisibleColumns(orderedSelectedColumns);
+
+    if (
+      orderedSelectedColumns.some((col) => col.field !== selectedSortData.field)
+    ) {
+      setSelectedSortData({
+        field: sortField ? sortField : "id",
+        order: sortOrder || 1,
+      });
+    }
+
+    // Update the sort order of the selected columns for the store in database
+    if (isStoreSorting) {
+      orderedSelectedColumns = updateSortOrder(
+        orderedSelectedColumns,
+        selectedSortData
+      ) as IColumn[];
+    }
     componentNameForSelectingColumns &&
       filterService &&
       filterService.setComponentValue(
         componentNameForSelectingColumns,
         orderedSelectedColumns
       );
-    setVisibleColumns(orderedSelectedColumns);
+  };
+
+  const onSort = (e: DataTableStateEvent) => {
+    setSelectedSortData({ field: e.sortField, order: e.sortOrder });
+    if (isStoreSorting) {
+      const columnsWithUpdatedSortOrder = updateSortOrder(visibleColumns, {
+        field: e.sortField,
+        order: e.sortOrder,
+      });
+      componentNameForSelectingColumns &&
+        filterService &&
+        filterService.setComponentValue(
+          componentNameForSelectingColumns,
+          columnsWithUpdatedSortOrder
+        );
+    }
   };
 
   const searchList = (event: { query: string }) => {
@@ -568,8 +632,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         rowGroupMode={rowGroupMode}
         groupRowsBy={groupRowsBy}
         sortMode={sortMode || "single"}
-        sortField={sortField || sortField === "" ? sortField : "id"}
-        sortOrder={sortOrder || 1}
+        sortField={selectedSortData.field}
+        sortOrder={selectedSortData.order}
         responsiveLayout={responsiveLayout}
         expandableRowGroups={expandableRowGroups}
         expandedRows={expandedRows ? expandedRows : rowsExpanded}
@@ -622,6 +686,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             };
           });
         }}
+        onSort={onSort}
       >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
