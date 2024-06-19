@@ -558,6 +558,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         typeof event.data?.id === "number"
       ) {
         if (onClickIcon) {
+          event.stopPropagation();
           onClickIcon(event.data);
         }
       }
@@ -584,6 +585,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           newWindow.focus();
         }
       } else {
+        event.stopPropagation();
         onClickIcon(rowData);
       }
     }
@@ -694,15 +696,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         {isColumnDefined && rowExpansionTemplate && !dataLoading && (
           <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
         )}
-        {isColumnDefined &&
-          !dataLoading &&
-          onClickIcon && (
-            <Column
-              body={iconColumnTemplate}
-              className="cursor-pointer"
-              style={{ width: "2rem" }}
-            />
-          )}
+        {isColumnDefined && !dataLoading && onClickIcon && (
+          <Column
+            body={iconColumnTemplate}
+            className="cursor-pointer"
+            style={{ width: "2rem" }}
+          />
+        )}
         {isColumnDefined &&
           reorderableColumns &&
           reorderableRows &&
