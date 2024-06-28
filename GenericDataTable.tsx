@@ -452,7 +452,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 className="w-3rem m-2 border-gray-600 font-semibold bg-gray-100"
                 selectedItemsLabel="select"
                 value={visibleColumns}
-                options={columns}
+                options={columns.filter((col) => col.hidden !== true)}
                 optionLabel="header"
                 onChange={(e) => onColumnToggle(e)}
                 dropdownIcon={() => {
