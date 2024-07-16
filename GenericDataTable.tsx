@@ -594,7 +594,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const iconColumnTemplate = (rowData: any) => {
     return (
       <i
-        className="pi pi-desktop"
+        className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
         }}
