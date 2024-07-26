@@ -79,16 +79,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     reorderableRows,
     onRowReorder,
     visibleColumn,
+    printPdf,
   } = props;
+  const { companyLogoBase64, tableName, currentUser } = printPdf || {};
+
   const {
     componentNameForSelectingColumns,
     filterService,
     isStoreSorting = false,
   } = visibleColumn || {};
+
   const [filters, setFilters] = useState({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
   });
-  const dt = useRef(null);
+  const dt = useRef<any>(null);
   const [rowsExpanded, setRowsExpanded] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [suggestionsList, setSuggestionsList] = useState<any>(null);
@@ -101,6 +105,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     field: sortField || sortField === "" ? sortField : "id",
     order: sortOrder || 1,
   });
+
+  const [filteredData, setFilteredData] = useState(null);
+
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
       filterService &&
@@ -134,7 +141,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         includeScore: true,
         threshold: globalSearchThreshold,
       };
+
       const fuse = new Fuse(data, fuseOptionsForGlobalFilter);
+
       return fuse.search(value).map((data) => data.item);
     }
     return data;
@@ -189,6 +198,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           body={dataLoading ? bodyTemplate : col.template}
           editor={col.editor}
           hidden={col.hidden}
+          filterElement={col?.filterElement}
+          onFilterClear={col.onFilterClear}
+          onFilterApplyClick={col.onFilterApplyClick}
+          filterMatchMode={col?.filterMatchMode}
+          showFilterMatchModes={col.showFilterMatchModes}
         />
       ));
       return dynamicColumn;
@@ -254,10 +268,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const clearAllFilter = () => {
     const generateFilters: any = {};
     columns.forEach((f) => {
-      generateFilters[f.field] = {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      };
+      generateFilters[f.field] =
+        typeof f.filter === "object"
+          ? f.filter
+          : {
+              operator: FilterOperator.AND,
+              constraints: [
+                { value: null, matchMode: FilterMatchMode.CONTAINS },
+              ],
+            };
     });
     setFilters((prev: any) => {
       return {
@@ -271,25 +290,117 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     clearAllFilter();
   };
 
-  const exportPdf = () => {
-    const parsedColumns = columns.map((column: any) => {
-      return column.header;
+  const getFilterValue = (filters: any) => {
+    const filterValue: any = [];
+    visibleColumns.forEach((col) => {
+      if (col.filter && col.field) {
+        filters[col.field]?.constraints?.forEach((constraint: any) => {
+          if (constraint.value !== null) {
+            filterValue.push(`${col.header}: ${constraint.value}`);
+          }
+        });
+      }
     });
-
-    const parsedValues = value.map((row: any) => {
-      return Object.values(row);
-    });
-
+    if (globalFilterValue)
+      [
+        filterValue.push(
+          `${t(
+            "components.genericDataTable.globalSearch"
+          )}: ${globalFilterValue}`
+        ),
+      ];
+    return filterValue.length > 0 ? filterValue.join(", ") : null;
+  };
+  const addMetaData = (
+    doc: any,
+    tableName: string,
+    totalPages: number,
+    user: any,
+    t: Function
+  ) => {
+    const date = new Date().toLocaleString();
+    doc.setFontSize(10);
+    doc.text(tableName, 200, 15);
+    if (user) {
+      const printCreatedBy = `${user.first_name} ${user.last_name}`;
+      doc.text(
+        `${t("components.genericDataTable.printedBy")}: ${printCreatedBy}`,
+        200,
+        20
+      );
+    }
+    doc.text(`${t("components.genericDataTable.printed")}: ${date}`, 200, 25);
+    const str = `${t("components.genericDataTable.pages", {
+      page: totalPages,
+      pages: totalPages,
+    })}`;
+    doc.text(str, 200, 30);
+  };
+  const addCompanyLogoToDocument = (doc: any, logo: string) => {
+    const img = new Image();
+    img.src = logo;
+    doc.addImage(img, "png", 15, 10, 35, 20);
+  };
+  const savePdf = (
+    parsedColumns: any,
+    data: any,
+    user?: any,
+    logo?: string
+  ) => {
     import("jspdf").then((jsPDF) => {
-      const doc = new jsPDF.default("p");
-      autoTable(doc, {
-        head: [parsedColumns],
-        body: parsedValues,
+      import("jspdf-autotable").then(() => {
+        const doc = new jsPDF.default("l", "mm", "a4");
+        let marginTop: number = 35;
+        const filterValue = getFilterValue(filters);
+        if (filterValue) {
+          doc.setFontSize(10);
+          doc.text(filterValue, 15, 35);
+          marginTop += 5;
+        }
+        const totalPages = doc.getNumberOfPages();
+        if (logo) {
+          addCompanyLogoToDocument(doc, logo);
+        }
+        autoTable(doc, {
+          head: [parsedColumns],
+          body: data,
+          didDrawCell: () => {},
+          margin: { top: marginTop },
+          didDrawPage: () => {
+            addMetaData(doc, tableName || "", totalPages, user, t);
+          },
+        });
+        doc.save(`${tableName ?? "dataTable"}.pdf`);
       });
-      doc.save("table_export_" + new Date().getTime() + ".pdf");
     });
   };
-
+  const exportPdf = (filteredData: any) => {
+    const parsedColumns = visibleColumns.map((column: IColumn) => ({
+      title: column.header,
+      dataKey: column.field,
+    }));
+    const data: any = [];
+    filteredData.map((row: any) => {
+      const rowData: any = [];
+      visibleColumns.map((column) => {
+        const title = column.field;
+        const data = _.get(row, title);
+        if (data && typeof data === "object" && data !== null) {
+          rowData.push(
+            data.length > 0 ? data.map((d: any) => d).join(", ") : ""
+          );
+        } else {
+          rowData.push(data);
+        }
+      });
+      data.push(rowData);
+    });
+    if (companyLogoBase64) {
+      savePdf(parsedColumns, data, currentUser, companyLogoBase64);
+    } else {
+      savePdf(parsedColumns, data, currentUser);
+    }
+  };
   const exportExcel = () => {
     import("xlsx").then((xlsx) => {
       const worksheet = xlsx.utils.json_to_sheet(value);
@@ -323,7 +434,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const updateSortOrder = (columns: IColumn[], sortData: IColumnSort) => {
     return columns.map((col) => {
       if (col.field === sortData.field) {
-        return { ...col, sortOrder: sortData.order };
+        return {
+          field: col.field,
+          header: col.header,
+          sortOrder: sortData.order,
+        };
       }
       return col;
     });
@@ -331,10 +446,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const onColumnToggle = (event: MultiSelectChangeEvent) => {
     const selectedColumns = event.value;
-    let orderedSelectedColumns = columns.filter(
-      (col) =>
-        selectedColumns.some((sCol: any) => sCol.field === col.field) ||
-        col.filter
+    let orderedSelectedColumns = columns.filter((col) =>
+      selectedColumns.some((sCol: any) => sCol.field === col.field)
     );
 
     setVisibleColumns(orderedSelectedColumns);
@@ -355,6 +468,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         selectedSortData
       ) as IColumn[];
     }
+
     componentNameForSelectingColumns &&
       filterService &&
       filterService.setComponentValue(
@@ -489,7 +603,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             <Button
               type="button"
               icon="pi pi-file-pdf"
-              onClick={exportPdf}
+              onClick={() => exportPdf(filteredData)}
               className="m-2 p-button-outlined p-button-secondary"
               tooltip="PDF"
               tooltipOptions={tooltipOptions}
@@ -528,8 +642,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       ? FILTER_LEVELS.WILD_SEARCH
                       : FILTER_LEVELS.NORMAL_SEARCH
                   );
-                }}
-              >
+                }}>
                 <VscRegex size={20} />
               </Button>
             </span>
@@ -597,8 +710,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}
-      ></i>
+        }}></i>
     );
   };
 
@@ -677,6 +789,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onRowCollapse={onRowCollapse}
         reorderableColumns={reorderableColumns}
         reorderableRows={reorderableRows}
+        onValueChange={(value) => {
+          setFilteredData(value as any);
+        }}
         onRowReorder={(e) => {
           onRowReorder && onRowReorder(e);
         }}
@@ -688,8 +803,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             };
           });
         }}
-        onSort={onSort}
-      >
+        onSort={onSort}>
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
         )}
@@ -714,8 +828,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column
             rowEditor
             headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}
-          ></Column>
+            bodyStyle={{ textAlign: "center" }}></Column>
         )}
         {isColumnDefined && actionBodyTemplate && !dataLoading && (
           <Column className="action-column" body={actionBodyTemplate}></Column>

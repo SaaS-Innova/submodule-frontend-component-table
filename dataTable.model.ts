@@ -1,4 +1,8 @@
-import { ColumnBodyOptions } from "primereact/column";
+import { FilterMatchMode } from "primereact/api";
+import {
+  ColumnBodyOptions,
+  ColumnFilterElementTemplateOptions,
+} from "primereact/column";
 import {
   DataTableRowClassNameOptions,
   DataTableRowClickEvent,
@@ -25,6 +29,8 @@ export interface IGenericDataTableProps {
   globalFilterFields?: string[];
   rowHover?: boolean;
   rows?: number;
+  printPdf?: any;
+
   paginator?: boolean;
   paginatorTemplate?: string;
   currentPageReportTemplate?: string;
@@ -87,9 +93,23 @@ export interface IColumn {
   editor?: any;
   className?: string;
   style?: any;
+  filterMatchMode?: FilterMatchMode | undefined;
   hidden?: boolean;
   selectionMode?: "multiple" | "single" | undefined;
   sortOrder?: SortOrder;
+  showFilterMenu?: boolean;
+  onFilterClear?: any;
+
+  showFilterMatchModes?: boolean;
+  onFilterApplyClick?: any;
+  downloadPdf?: {
+    currentUser: any;
+    tableName: string;
+    companyLogoBase64: string | null;
+  };
+  filterElement?:
+    | React.ReactNode
+    | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
 }
 
 export interface IColumnSort {
