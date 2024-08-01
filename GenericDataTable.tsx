@@ -81,7 +81,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     visibleColumn,
     printPdf,
   } = props;
-  const { companyLogoBase64, tableName, currentUser } = printPdf || {};
+  const { companyLogoBase64, tableName, currentUser, printedDate } =
+    printPdf || {};
 
   const {
     componentNameForSelectingColumns,
@@ -200,7 +201,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           hidden={col.hidden}
           filterElement={col?.filterElement}
           onFilterClear={col.onFilterClear}
-          onFilterApplyClick={col.onFilterApplyClick}
+          filterApply={col?.filterApply}
+          filterClear={col?.filterClear}
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
         />
@@ -231,7 +233,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columns, componentNameForSelectingColumns]);
-
   useEffect(() => {
     initFilters();
   }, []);
@@ -267,7 +268,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const clearAllFilter = () => {
     const generateFilters: any = {};
+
     columns.forEach((f) => {
+      if (f.onFilterClear) {
+        f.onFilterClear();
+      }
       generateFilters[f.field] =
         typeof f.filter === "object"
           ? f.filter
@@ -293,7 +298,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const getFilterValue = (filters: any) => {
     const filterValue: any = [];
     visibleColumns.forEach((col) => {
-      if (col.filter && col.field) {
+      if (col.field) {
         filters[col.field]?.constraints?.forEach((constraint: any) => {
           if (constraint.value !== null) {
             filterValue.push(`${col.header}: ${constraint.value}`);
@@ -311,35 +316,31 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       ];
     return filterValue.length > 0 ? filterValue.join(", ") : null;
   };
-  const addMetaData = (
-    doc: any,
-    tableName: string,
-    totalPages: number,
-    user: any,
-    t: Function
-  ) => {
-    const date = new Date().toLocaleString();
+  const addMetaData = (doc: any, tableName: string, user: any, t: Function) => {
+    const date = printedDate ?? new Date().toLocaleString();
     doc.setFontSize(10);
-    doc.text(tableName, 200, 15);
+    doc.text(tableName, 280, 15, {
+      align: "right",
+    });
     if (user) {
       const printCreatedBy = `${user.first_name} ${user.last_name}`;
       doc.text(
         `${t("components.genericDataTable.printedBy")}: ${printCreatedBy}`,
-        200,
-        20
+        280,
+        20,
+        {
+          align: "right",
+        }
       );
     }
-    doc.text(`${t("components.genericDataTable.printed")}: ${date}`, 200, 25);
-    const str = `${t("components.genericDataTable.pages", {
-      page: totalPages,
-      pages: totalPages,
-    })}`;
-    doc.text(str, 200, 30);
+    doc.text(`${t("components.genericDataTable.printed")}: ${date}`, 280, 25, {
+      align: "right",
+    });
   };
   const addCompanyLogoToDocument = (doc: any, logo: string) => {
     const img = new Image();
     img.src = logo;
-    doc.addImage(img, "png", 15, 10, 35, 20);
+    doc.addImage(img, "png", 15, 10, 50, 20);
   };
   const savePdf = (
     parsedColumns: any,
@@ -357,19 +358,31 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           doc.text(filterValue, 15, 35);
           marginTop += 5;
         }
-        const totalPages = doc.getNumberOfPages();
-        if (logo) {
-          addCompanyLogoToDocument(doc, logo);
-        }
+
         autoTable(doc, {
           head: [parsedColumns],
           body: data,
           didDrawCell: () => {},
           margin: { top: marginTop },
           didDrawPage: () => {
-            addMetaData(doc, tableName || "", totalPages, user, t);
+            addMetaData(doc, tableName || "", user, t);
           },
         });
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          if (logo) {
+            addCompanyLogoToDocument(doc, logo);
+          }
+          doc.setFontSize(10);
+          doc.setPage(i);
+          const str = `${t("components.genericDataTable.pages", {
+            page: String(i),
+            pages: String(pageCount),
+          })}`;
+          doc.text(str, 280, 30, {
+            align: "right",
+          });
+        }
         doc.save(`${tableName ?? "dataTable"}.pdf`);
       });
     });

@@ -2,6 +2,8 @@ import { FilterMatchMode } from "primereact/api";
 import {
   ColumnBodyOptions,
   ColumnFilterElementTemplateOptions,
+  ColumnFilterClearTemplateOptions,
+  ColumnFilterApplyTemplateOptions,
 } from "primereact/column";
 import {
   DataTableRowClassNameOptions,
@@ -29,8 +31,12 @@ export interface IGenericDataTableProps {
   globalFilterFields?: string[];
   rowHover?: boolean;
   rows?: number;
-  printPdf?: any;
-
+  printPdf?: {
+    currentUser: any;
+    tableName: string;
+    companyLogoBase64: string | null;
+    printedDate: string;
+  };
   paginator?: boolean;
   paginatorTemplate?: string;
   currentPageReportTemplate?: string;
@@ -99,14 +105,15 @@ export interface IColumn {
   sortOrder?: SortOrder;
   showFilterMenu?: boolean;
   onFilterClear?: any;
+  filterApply?:
+    | React.ReactNode
+    | ((options: ColumnFilterApplyTemplateOptions) => React.ReactNode);
 
+  filterClear?:
+    | React.ReactNode
+    | ((options: ColumnFilterClearTemplateOptions) => React.ReactNode);
   showFilterMatchModes?: boolean;
   onFilterApplyClick?: any;
-  downloadPdf?: {
-    currentUser: any;
-    tableName: string;
-    companyLogoBase64: string | null;
-  };
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
