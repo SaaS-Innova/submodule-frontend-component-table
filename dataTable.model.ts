@@ -2,8 +2,6 @@ import { FilterMatchMode } from "primereact/api";
 import {
   ColumnBodyOptions,
   ColumnFilterElementTemplateOptions,
-  ColumnFilterClearTemplateOptions,
-  ColumnFilterApplyTemplateOptions,
 } from "primereact/column";
 import {
   DataTableRowClassNameOptions,
@@ -18,6 +16,7 @@ export interface IGenericDataTableProps {
   classNames?: string;
   columns: IColumn[];
   value?: any;
+  setCustomFilter?: (value: string, filter: any) => Boolean;
   actionBodyTemplate?:
     | React.ReactNode
     | ((data: any, options: ColumnBodyOptions) => React.ReactNode);
@@ -104,16 +103,8 @@ export interface IColumn {
   selectionMode?: "multiple" | "single" | undefined;
   sortOrder?: SortOrder;
   showFilterMenu?: boolean;
-  onFilterClear?: any;
-  filterApply?:
-    | React.ReactNode
-    | ((options: ColumnFilterApplyTemplateOptions) => React.ReactNode);
-
-  filterClear?:
-    | React.ReactNode
-    | ((options: ColumnFilterClearTemplateOptions) => React.ReactNode);
   showFilterMatchModes?: boolean;
-  onFilterApplyClick?: any;
+
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);

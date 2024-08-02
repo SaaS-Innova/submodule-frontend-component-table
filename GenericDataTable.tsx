@@ -8,7 +8,7 @@ import {
   IColumnSort,
   IGenericDataTableProps,
 } from "./dataTable.model";
-import { FilterMatchMode, FilterOperator } from "primereact/api";
+import { FilterMatchMode, FilterOperator, FilterService } from "primereact/api";
 import autoTable from "jspdf-autotable";
 import AppButton from "../button/AppButton";
 import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
@@ -19,7 +19,6 @@ import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
 import { VscRegex } from "react-icons/vsc";
 import { classNames as conditionClassNames } from "primereact/utils";
-
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
@@ -28,6 +27,7 @@ const FILTER_LEVELS = {
 const GenericDataTable = (props: IGenericDataTableProps) => {
   const { t } = useTranslation();
   const {
+    setCustomFilter,
     classNames,
     columns,
     value,
@@ -84,6 +84,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const { companyLogoBase64, tableName, currentUser, printedDate } =
     printPdf || {};
 
+  if (setCustomFilter) {
+    FilterService.register("treeColumnFilter", (value: any, filter: any) => {
+      const isMatchFilter = Boolean(setCustomFilter(value, filter));
+      return isMatchFilter;
+    });
+  }
   const {
     componentNameForSelectingColumns,
     filterService,
@@ -200,9 +206,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           editor={col.editor}
           hidden={col.hidden}
           filterElement={col?.filterElement}
-          onFilterClear={col.onFilterClear}
-          filterApply={col?.filterApply}
-          filterClear={col?.filterClear}
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
         />
@@ -270,9 +273,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     const generateFilters: any = {};
 
     columns.forEach((f) => {
-      if (f.onFilterClear) {
-        f.onFilterClear();
-      }
       generateFilters[f.field] =
         typeof f.filter === "object"
           ? f.filter
@@ -304,6 +304,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             filterValue.push(`${col.header}: ${constraint.value}`);
           }
         });
+        if (filters[col.field].matchMode === "treeColumnFilter") {
+          filters[col.field]?.value &&
+            filters[col.field].value.forEach((key: any) => {
+              filterValue.push(`${col.header}: ${key.name}`);
+            });
+        }
       }
     });
     if (globalFilterValue)
