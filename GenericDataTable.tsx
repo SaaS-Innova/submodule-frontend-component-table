@@ -113,7 +113,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     order: sortOrder || 1,
   });
 
-  const [filteredData, setFilteredData] = useState(null);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
 
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
@@ -398,38 +398,56 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       title: column.header,
       dataKey: column.field,
     }));
-    const data: any = [];
-    filteredData.map((row: any) => {
-      const rowData: any = [];
-      visibleColumns.map((column) => {
-        const title = column.field;
-        const data = _.get(row, title);
-        if (data && typeof data === "object" && data !== null) {
-          rowData.push(
-            data.length > 0 ? data.map((d: any) => d).join(", ") : ""
-          );
-        } else {
-          rowData.push(data);
-        }
-      });
-      data.push(rowData);
-    });
+    const visibleColumnsData = getVisibleColumnsListData(filteredData);
     if (companyLogoBase64) {
-      savePdf(parsedColumns, data, currentUser, companyLogoBase64);
+      savePdf(
+        parsedColumns,
+        visibleColumnsData,
+        currentUser,
+        companyLogoBase64
+      );
     } else {
-      savePdf(parsedColumns, data, currentUser);
+      savePdf(parsedColumns, visibleColumnsData, currentUser);
     }
   };
   const exportExcel = () => {
     import("xlsx").then((xlsx) => {
-      const worksheet = xlsx.utils.json_to_sheet(value);
+      const headers = visibleColumns.map((col) => col.header);
+
+      const visibleColumnsData = getVisibleColumnsListData(filteredData);
+      // Combine headers and mapped data
+      const worksheetData = [headers, ...visibleColumnsData];
+
+      const worksheet = xlsx.utils.aoa_to_sheet(worksheetData);
       const workbook = { Sheets: { data: worksheet }, SheetNames: ["data"] };
       const excelBuffer = xlsx.write(workbook, {
         bookType: "xlsx",
         type: "array",
       });
-      saveAsExcelFile(excelBuffer, "table");
+      saveAsExcelFile(excelBuffer, tableName || "dataTable");
     });
+  };
+
+  const getVisibleColumnsListData = (columns: IColumn[]) => {
+    const data: any = [];
+    if (columns) {
+      columns?.map((row: any) => {
+        const rowData: any = [];
+        visibleColumns.map((column) => {
+          const title = column.field;
+          const data = _.get(row, title);
+          if (data && typeof data === "object" && data !== null) {
+            rowData.push(
+              data.length > 0 ? data.map((d: any) => d).join(", ") : ""
+            );
+          } else {
+            rowData.push(data);
+          }
+        });
+        data.push(rowData);
+      });
+    }
+    return data;
   };
 
   const saveAsExcelFile = (buffer: any, fileName: string) => {
@@ -661,7 +679,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       ? FILTER_LEVELS.WILD_SEARCH
                       : FILTER_LEVELS.NORMAL_SEARCH
                   );
-                }}>
+                }}
+              >
                 <VscRegex size={20} />
               </Button>
             </span>
@@ -729,7 +748,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}></i>
+        }}
+      ></i>
     );
   };
 
@@ -822,7 +842,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             };
           });
         }}
-        onSort={onSort}>
+        onSort={onSort}
+      >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
         )}
@@ -847,7 +868,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column
             rowEditor
             headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}></Column>
+            bodyStyle={{ textAlign: "center" }}
+          ></Column>
         )}
         {isColumnDefined && actionBodyTemplate && !dataLoading && (
           <Column className="action-column" body={actionBodyTemplate}></Column>
