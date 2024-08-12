@@ -411,27 +411,34 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     }
   };
   const exportExcel = () => {
-    import('xlsx').then((xlsx) => {
+    import("xlsx").then((xlsx) => {
       const headers = visibleColumns.map((col) => col.header);
       const printCreatedBy = `${currentUser.first_name} ${currentUser.last_name}`;
       const visibleColumnsData = getVisibleColumnsListData(filteredData);
+      const filterValue = getFilterValue(filters);
       const worksheetData = [
-        [`Printed:`, `${printedDate}`],
-        [`Printed By:`, ` ${printCreatedBy}`],
+        [`${t("components.genericDataTable.printed")}:`, `${printedDate}`],
+        [
+          `${t("components.genericDataTable.printedBy")}:`,
+          ` ${printCreatedBy}`,
+        ],
         [],
         headers,
         ...visibleColumnsData,
       ];
+      if (filterValue) {
+        worksheetData.splice(2, 0, [filterValue]);
+      }
       const worksheet = xlsx.utils.aoa_to_sheet(worksheetData);
       const workbook = {
         Sheets: { [`${tableName}`]: worksheet },
         SheetNames: [`${tableName}`],
       };
       const excelBuffer = xlsx.write(workbook, {
-        bookType: 'xlsx',
-        type: 'array',
+        bookType: "xlsx",
+        type: "array",
       });
-      saveAsExcelFile(excelBuffer, tableName || 'dataTable');
+      saveAsExcelFile(excelBuffer, tableName || "dataTable");
     });
   };
 
