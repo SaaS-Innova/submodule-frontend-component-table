@@ -81,8 +81,14 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     visibleColumn,
     printPdf,
   } = props;
-  const { companyLogoBase64, tableName, currentUser, printedDate } =
-    printPdf || {};
+
+  const {
+    printedDate,
+    currentUser,
+    leftCornerDataPrint,
+    companyLogoBase64,
+    tableName,
+  } = printPdf || {};
 
   if (setCustomFilter) {
     FilterService.register("treeColumnFilter", (value: any, filter: any) => {
@@ -304,7 +310,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             filterValue.push(`${col.header}: ${constraint.value}`);
           }
         });
-        if (filters[col.field].matchMode === "treeColumnFilter") {
+        if (filters[col.field].matchMode === 'treeColumnFilter') {
           filters[col.field]?.value &&
             filters[col.field].value.forEach((key: any) => {
               filterValue.push(`${col.header}: ${key.name}`);
@@ -312,66 +318,78 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         }
       }
     });
-    if (globalFilterValue)
-      [
-        filterValue.push(
-          `${t(
-            "components.genericDataTable.globalSearch"
-          )}: ${globalFilterValue}`
-        ),
-      ];
-    return filterValue.length > 0 ? filterValue.join(", ") : null;
-  };
-  const addMetaData = (doc: any, tableName: string, user: any, t: Function) => {
-    const date = printedDate ?? new Date().toLocaleString();
-    doc.setFontSize(10);
-    doc.text(tableName, 280, 15, {
-      align: "right",
-    });
-    if (user) {
-      const printCreatedBy = `${user.first_name} ${user.last_name}`;
-      doc.text(
-        `${t("components.genericDataTable.printedBy")}: ${printCreatedBy}`,
-        280,
-        20,
-        {
-          align: "right",
-        }
+    if (globalFilterValue) {
+      filterValue.push(
+        `${t(
+          'components.genericDataTable.globalSearch',
+        )}: ${globalFilterValue}`,
       );
     }
-    doc.text(`${t("components.genericDataTable.printed")}: ${date}`, 280, 25, {
-      align: "right",
-    });
+    return filterValue.length > 0 ? filterValue.join(', ') : null;
+  };
+  let top = 0;
+  const addMetaData = (doc: any, tableName: string) => {
+    if (leftCornerDataPrint && Object.entries(leftCornerDataPrint).length > 0) {
+      doc.setFontSize(10);
+      doc.text(tableName, 280, top, {
+        align: 'right',
+      });
+      top += 5;
+      Object.entries(leftCornerDataPrint).forEach(([key, value]) => {
+        doc.text(`${key}: ${value}`, 280, top, { align: 'right' });
+        top += 5;
+      });
+    } else {
+      const date = new Date().toLocaleString();
+      doc.setFontSize(10);
+      doc.text(tableName, 280, top, {
+        align: 'right',
+      });
+      top += 5;
+      doc.text(
+        `${t('components.genericDataTable.printed')}: ${date}`,
+        280,
+        top,
+        {
+          align: 'right',
+        },
+      );
+      top += 5;
+    }
   };
   const addCompanyLogoToDocument = (doc: any, logo: string) => {
     const img = new Image();
     img.src = logo;
-    doc.addImage(img, "png", 15, 10, 50, 20);
+    doc.addImage(img, 'png', 15, 10, 50, 20);
   };
-  const savePdf = (
-    parsedColumns: any,
-    data: any,
-    user?: any,
-    logo?: string
-  ) => {
-    import("jspdf").then((jsPDF) => {
-      import("jspdf-autotable").then(() => {
-        const doc = new jsPDF.default("l", "mm", "a4");
-        let marginTop: number = 35;
+  const findMarginTop = () => {
+    let marginTop = 22;
+    leftCornerDataPrint
+      ? Object.values(leftCornerDataPrint).forEach(() => {
+          marginTop += 5;
+        })
+      : 35;
+    return leftCornerDataPrint ? marginTop : 27;
+  };
+  const savePdf = (parsedColumns: any, data: any, logo?: string) => {
+    import('jspdf').then((jsPDF) => {
+      import('jspdf-autotable').then(() => {
+        const doc = new jsPDF.default('l', 'mm', 'a4');
+        let marginTop: number = findMarginTop();
         const filterValue = getFilterValue(filters);
         if (filterValue) {
           doc.setFontSize(10);
-          doc.text(filterValue, 15, 35);
+          doc.text(filterValue, 15, (marginTop += 3));
           marginTop += 5;
         }
-
         autoTable(doc, {
           head: [parsedColumns],
           body: data,
           didDrawCell: () => {},
           margin: { top: marginTop },
           didDrawPage: () => {
-            addMetaData(doc, tableName || "", user, t);
+            top = 15;
+            addMetaData(doc, headerText || '');
           },
         });
         const pageCount = (doc as any).internal.getNumberOfPages();
@@ -381,18 +399,19 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           }
           doc.setFontSize(10);
           doc.setPage(i);
-          const str = `${t("components.genericDataTable.pages", {
+          const str = `${t('components.genericDataTable.pages', {
             page: String(i),
             pages: String(pageCount),
           })}`;
-          doc.text(str, 280, 30, {
-            align: "right",
+          doc.text(str, 280, top, {
+            align: 'right',
           });
         }
-        doc.save(`${tableName ?? "dataTable"}.pdf`);
+        doc.save(`${tableName ?? 'dataTable'}.pdf`);
       });
     });
   };
+
   const exportPdf = (filteredData: any) => {
     const parsedColumns = visibleColumns.map((column: IColumn) => ({
       title: column.header,

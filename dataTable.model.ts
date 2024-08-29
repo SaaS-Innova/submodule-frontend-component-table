@@ -31,10 +31,11 @@ export interface IGenericDataTableProps {
   rowHover?: boolean;
   rows?: number;
   printPdf?: {
-    currentUser: any;
-    tableName: string;
-    companyLogoBase64: string | null;
-    printedDate: string;
+    leftCornerDataPrint?: any;
+    companyLogoBase64?: string | null;
+    currentUser?: any;
+    printedDate?: string;
+    tableName?: string;
   };
   paginator?: boolean;
   paginatorTemplate?: string;
