@@ -422,7 +422,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       savePdf(
         parsedColumns,
         visibleColumnsData,
-        currentUser,
         companyLogoBase64
       );
     } else {
