@@ -310,7 +310,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             filterValue.push(`${col.header}: ${constraint.value}`);
           }
         });
-        if (filters[col.field].matchMode === 'treeColumnFilter') {
+        if (filters[col.field].matchMode === "treeColumnFilter") {
           filters[col.field]?.value &&
             filters[col.field].value.forEach((key: any) => {
               filterValue.push(`${col.header}: ${key.name}`);
@@ -320,39 +320,37 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
     if (globalFilterValue) {
       filterValue.push(
-        `${t(
-          'components.genericDataTable.globalSearch',
-        )}: ${globalFilterValue}`,
+        `${t("components.genericDataTable.globalSearch")}: ${globalFilterValue}`
       );
     }
-    return filterValue.length > 0 ? filterValue.join(', ') : null;
+    return filterValue.length > 0 ? filterValue.join(", ") : null;
   };
   let top = 0;
   const addMetaData = (doc: any, tableName: string) => {
     if (leftCornerDataPrint && Object.entries(leftCornerDataPrint).length > 0) {
       doc.setFontSize(10);
       doc.text(tableName, 280, top, {
-        align: 'right',
+        align: "right",
       });
       top += 5;
       Object.entries(leftCornerDataPrint).forEach(([key, value]) => {
-        doc.text(`${key}: ${value}`, 280, top, { align: 'right' });
+        doc.text(`${key}: ${value}`, 280, top, { align: "right" });
         top += 5;
       });
     } else {
       const date = new Date().toLocaleString();
       doc.setFontSize(10);
       doc.text(tableName, 280, top, {
-        align: 'right',
+        align: "right",
       });
       top += 5;
       doc.text(
-        `${t('components.genericDataTable.printed')}: ${date}`,
+        `${t("components.genericDataTable.printed")}: ${date}`,
         280,
         top,
         {
-          align: 'right',
-        },
+          align: "right",
+        }
       );
       top += 5;
     }
@@ -360,7 +358,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const addCompanyLogoToDocument = (doc: any, logo: string) => {
     const img = new Image();
     img.src = logo;
-    doc.addImage(img, 'png', 15, 10, 50, 20);
+    doc.addImage(img, "png", 15, 10, 50, 20);
   };
   const findMarginTop = () => {
     let marginTop = 22;
@@ -372,9 +370,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return leftCornerDataPrint ? marginTop : 27;
   };
   const savePdf = (parsedColumns: any, data: any, logo?: string) => {
-    import('jspdf').then((jsPDF) => {
-      import('jspdf-autotable').then(() => {
-        const doc = new jsPDF.default('l', 'mm', 'a4');
+    import("jspdf").then((jsPDF) => {
+      import("jspdf-autotable").then(() => {
+        const doc = new jsPDF.default("l", "mm", "a4");
         let marginTop: number = findMarginTop();
         const filterValue = getFilterValue(filters);
         if (filterValue) {
@@ -389,7 +387,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           margin: { top: marginTop },
           didDrawPage: () => {
             top = 15;
-            addMetaData(doc, headerText || '');
+            addMetaData(doc, headerText || "");
           },
         });
         const pageCount = (doc as any).internal.getNumberOfPages();
@@ -399,15 +397,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           }
           doc.setFontSize(10);
           doc.setPage(i);
-          const str = `${t('components.genericDataTable.pages', {
+          const str = `${t("components.genericDataTable.pages", {
             page: String(i),
             pages: String(pageCount),
           })}`;
           doc.text(str, 280, top, {
-            align: 'right',
+            align: "right",
           });
         }
-        doc.save(`${tableName ?? 'dataTable'}.pdf`);
+        doc.save(`${tableName ?? "dataTable"}.pdf`);
       });
     });
   };
@@ -419,11 +417,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     }));
     const visibleColumnsData = getVisibleColumnsListData(filteredData);
     if (companyLogoBase64) {
-      savePdf(
-        parsedColumns,
-        visibleColumnsData,
-        companyLogoBase64
-      );
+      savePdf(parsedColumns, visibleColumnsData, companyLogoBase64);
     } else {
       savePdf(parsedColumns, visibleColumnsData, currentUser);
     }
@@ -434,18 +428,27 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       const printCreatedBy = `${currentUser.first_name} ${currentUser.last_name}`;
       const visibleColumnsData = getVisibleColumnsListData(filteredData);
       const filterValue = getFilterValue(filters);
-      const worksheetData = [
-        [`${t("components.genericDataTable.printed")}:`, `${printedDate}`],
-        [
+      const worksheetData = [[], headers, ...visibleColumnsData];
+      if (tableName) {
+        worksheetData.splice(0, 0, [`${tableName}`]);
+      }
+      let insertionIndex = 0;
+      if (leftCornerDataPrint) {
+        Object.entries(leftCornerDataPrint).forEach(([key, value]) => {
+          worksheetData.splice(insertionIndex++, 0, [`${key}:`, `${value}`]);
+        });
+      } else {
+        worksheetData.splice(insertionIndex++, 0, [
+          `${t("components.genericDataTable.printed")}:`,
+          `${printedDate}`,
+        ]);
+        worksheetData.splice(insertionIndex++, 0, [
           `${t("components.genericDataTable.printedBy")}:`,
           ` ${printCreatedBy}`,
-        ],
-        [],
-        headers,
-        ...visibleColumnsData,
-      ];
+        ]);
+      }
       if (filterValue) {
-        worksheetData.splice(2, 0, [filterValue]);
+        worksheetData.splice(insertionIndex + 2, 0, [filterValue]);
       }
       const worksheet = xlsx.utils.aoa_to_sheet(worksheetData);
       const workbook = {
@@ -711,8 +714,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       ? FILTER_LEVELS.WILD_SEARCH
                       : FILTER_LEVELS.NORMAL_SEARCH
                   );
-                }}
-              >
+                }}>
                 <VscRegex size={20} />
               </Button>
             </span>
@@ -780,8 +782,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}
-      ></i>
+        }}></i>
     );
   };
 
@@ -874,8 +875,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             };
           });
         }}
-        onSort={onSort}
-      >
+        onSort={onSort}>
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
         )}
@@ -900,8 +900,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column
             rowEditor
             headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}
-          ></Column>
+            bodyStyle={{ textAlign: "center" }}></Column>
         )}
         {isColumnDefined && actionBodyTemplate && !dataLoading && (
           <Column className="action-column" body={actionBodyTemplate}></Column>
