@@ -419,7 +419,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     if (companyLogoBase64) {
       savePdf(parsedColumns, visibleColumnsData, companyLogoBase64);
     } else {
-      savePdf(parsedColumns, visibleColumnsData, currentUser);
+      savePdf(parsedColumns, visibleColumnsData);
     }
   };
   const exportExcel = () => {
