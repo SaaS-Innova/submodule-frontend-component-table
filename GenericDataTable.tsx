@@ -699,6 +699,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 className="w-full md:w-20rem m-2 pr-6"
                 placeholder={`${t("components.genericDataTable.placeholder")}`}
                 value={globalFilterValue}
+                tooltip="Use wildsearch"
+                tooltipOptions={{ position: "bottom" }}
               />
               <Button
                 type="button"
