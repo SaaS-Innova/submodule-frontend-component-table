@@ -84,6 +84,7 @@ export interface IGenericDataTableProps {
   reorderableRows?: boolean;
   onRowReorder?: (e: any) => void;
   visibleColumn?: IvisibleColumnsProps;
+  entityName?: string;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

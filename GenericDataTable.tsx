@@ -80,6 +80,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     onRowReorder,
     visibleColumn,
     printPdf,
+    entityName,
   } = props;
 
   const {
@@ -116,36 +117,36 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   );
   const [selectedSortData, setSelectedSortData] = useState<IColumnSort>({
     field: sortField || sortField === "" ? sortField : "id",
-    order: sortOrder || 1,
+    order: sortOrder ?? 1,
   });
 
   const [filteredData, setFilteredData] = useState<any[]>([]);
 
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
-      filterService &&
-        filterService.getComponentValue(componentName).then((res: any) => {
-          if (res && res.length > 0) {
-            let cols = columns.filter((col: IColumn) =>
-              res.some((resCol: IColumn) => resCol.field === col.field)
-            );
-            setVisibleColumns(cols);
-            const selectedSortField = res.find(
-              (col: IColumn) => col?.sortOrder
-            );
-            if (selectedSortField) {
-              setSelectedSortData({
-                field: selectedSortField?.field,
-                order: selectedSortField?.sortOrder,
-              });
-            }
-          } else {
-            setVisibleColumns(columns);
+      filterService?.getComponentValue(componentName).then((res: any) => {
+        if (res && res.length > 0) {
+          updateVisibleColumns(res, columns);
+
+          const selectedSortField = res.find((col: IColumn) => col?.sortOrder);
+          if (selectedSortField) {
+            setSelectedSortData({
+              field: selectedSortField?.field,
+              order: selectedSortField?.sortOrder,
+            });
           }
-        });
+        } else {
+          setVisibleColumns(columns);
+        }
+      });
     }, 250)
   );
-
+  const updateVisibleColumns = (res: IColumn[], columns: IColumn[]) => {
+    let cols = columns.filter((col: IColumn) =>
+      res.some((resCol: IColumn) => resCol.field === col.field)
+    );
+    setVisibleColumns(cols);
+  };
   const customGlobalFilter = (data: any[], value: string) => {
     if (data && value) {
       const fuseOptionsForGlobalFilter = {
@@ -197,9 +198,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const dynamicColumns = useMemo(() => {
     if (visibleColumns) {
-      const dynamicColumn = visibleColumns?.map((col, index) => (
+      const dynamicColumn = visibleColumns?.map((col) => (
         <Column
-          key={index}
+          key={col.field}
           className={`${col.className} `}
           selectionMode={col?.selectionMode}
           style={col.style}
@@ -221,8 +222,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleColumns]);
 
-  const isColumnDefined =
-    dynamicColumns && dynamicColumns.length > 0 ? true : false;
+  const isColumnDefined = !!(dynamicColumns && dynamicColumns.length > 0);
 
   useEffect(() => {
     if (columns) {
@@ -274,20 +274,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       };
     });
   };
+  const createFilterObject = (filter: any) => {
+    return typeof filter === "object"
+      ? filter
+      : {
+          operator: FilterOperator.AND,
+          constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+        };
+  };
 
   const clearAllFilter = () => {
     const generateFilters: any = {};
 
     columns.forEach((f) => {
-      generateFilters[f.field] =
-        typeof f.filter === "object"
-          ? f.filter
-          : {
-              operator: FilterOperator.AND,
-              constraints: [
-                { value: null, matchMode: FilterMatchMode.CONTAINS },
-              ],
-            };
+      generateFilters[f.field] = createFilterObject(f.filter);
     });
     setFilters((prev: any) => {
       return {
@@ -311,10 +311,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           }
         });
         if (filters[col.field].matchMode === "treeColumnFilter") {
-          filters[col.field]?.value &&
-            filters[col.field].value.forEach((key: any) => {
-              filterValue.push(`${col.header}: ${key.name}`);
-            });
+          filters[col.field]?.value?.forEach((key: any) => {
+            filterValue.push(`${col.header}: ${key.name}`);
+          });
         }
       }
     });
@@ -362,11 +361,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
   const findMarginTop = () => {
     let marginTop = 22;
-    leftCornerDataPrint
-      ? Object.values(leftCornerDataPrint).forEach(() => {
-          marginTop += 5;
-        })
-      : 35;
+    if (leftCornerDataPrint) {
+      Object.values(leftCornerDataPrint).forEach(() => {
+        marginTop += 5;
+      });
+    }
     return leftCornerDataPrint ? marginTop : 27;
   };
   const savePdf = (parsedColumns: any, data: any, logo?: string) => {
@@ -377,7 +376,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         const filterValue = getFilterValue(filters);
         if (filterValue) {
           doc.setFontSize(10);
-          doc.text(filterValue, 15, (marginTop += 3));
+          marginTop += 3;
+          doc.text(filterValue, 15, marginTop);
           marginTop += 5;
         }
         autoTable(doc, {
@@ -387,7 +387,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           margin: { top: marginTop },
           didDrawPage: () => {
             top = 15;
-            addMetaData(doc, headerText || "");
+            addMetaData(doc, headerText ?? "");
           },
         });
         const pageCount = (doc as any).internal.getNumberOfPages();
@@ -425,7 +425,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const exportExcel = () => {
     import("xlsx").then((xlsx) => {
       const headers = visibleColumns.map((col) => col.header);
-      const printCreatedBy = `${currentUser.first_name} ${currentUser.last_name}`;
+      const printCreatedBy = `${currentUser?.first_name} ${currentUser?.last_name}`;
       const visibleColumnsData = getVisibleColumnsListData(filteredData);
       const filterValue = getFilterValue(filters);
       const worksheetData = [[], headers, ...visibleColumnsData];
@@ -459,22 +459,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         bookType: "xlsx",
         type: "array",
       });
-      saveAsExcelFile(excelBuffer, tableName || "dataTable");
+      saveAsExcelFile(excelBuffer, tableName ?? "dataTable");
     });
   };
 
   const getVisibleColumnsListData = (columns: IColumn[]) => {
     const data: any = [];
     if (columns) {
-      columns?.map((row: any) => {
+      columns?.forEach((row: any) => {
         const rowData: any = [];
-        visibleColumns.map((column) => {
+        visibleColumns.forEach((column) => {
           const title = column.field;
           const data = _.get(row, title);
           if (data && typeof data === "object" && data !== null) {
-            rowData.push(
-              data.length > 0 ? data.map((d: any) => d).join(", ") : ""
-            );
+            rowData.push(Array.isArray(data) ? data.join(", ") : "");
           } else {
             rowData.push(data);
           }
@@ -487,7 +485,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const saveAsExcelFile = (buffer: any, fileName: string) => {
     import("file-saver").then((module) => {
-      if (module && module.default) {
+      if (module?.default) {
         let EXCEL_TYPE =
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
         let EXCEL_EXTENSION = ".xlsx";
@@ -528,8 +526,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       orderedSelectedColumns.some((col) => col.field !== selectedSortData.field)
     ) {
       setSelectedSortData({
-        field: sortField ? sortField : "id",
-        order: sortOrder || 1,
+        field: sortField ?? "id",
+        order: sortOrder ?? 1,
       });
     }
 
@@ -538,12 +536,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       orderedSelectedColumns = updateSortOrder(
         orderedSelectedColumns,
         selectedSortData
-      ) as IColumn[];
+      );
     }
 
     componentNameForSelectingColumns &&
-      filterService &&
-      filterService.setComponentValue(
+      filterService?.setComponentValue(
         componentNameForSelectingColumns,
         orderedSelectedColumns
       );
@@ -557,8 +554,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         order: e.sortOrder,
       });
       componentNameForSelectingColumns &&
-        filterService &&
-        filterService.setComponentValue(
+        filterService?.setComponentValue(
           componentNameForSelectingColumns,
           columnsWithUpdatedSortOrder
         );
@@ -571,7 +567,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
       if (!event.query.trim().length) {
         if (headerDropdown?.options) {
-          _suggestionsList = [...headerDropdown?.options];
+          _suggestionsList = [...(headerDropdown?.options ?? [])];
         }
       } else {
         // eslint-disable-next-line
@@ -613,7 +609,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             field="label"
             dropdown
             dropdownAriaLabel="Select Item"
-            placeholder={headerDropdown?.placeholder || "Select Item"}
+            placeholder={headerDropdown?.placeholder ?? "Select Item"}
             onChange={(e) => {
               setSelectedItem(e.value);
             }}
@@ -632,25 +628,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       </div>
       <div className="flex flex-wrap ">
         {componentNameForSelectingColumns && filterService && (
-          <>
-            <div>
-              <MultiSelect
-                className="w-3rem m-2 border-gray-600 font-semibold bg-gray-100"
-                selectedItemsLabel="select"
-                value={visibleColumns}
-                options={columns.filter((col) => col.hidden !== true)}
-                optionLabel="header"
-                onChange={(e) => onColumnToggle(e)}
-                dropdownIcon={() => {
-                  return (
-                    <i className="pi pi-bars text-gray-800 bg-gray-100 "></i>
-                  );
-                }}
-                tooltip="Show/Hide columns"
-                tooltipOptions={tooltipOptions}
-              />
-            </div>
-          </>
+          <div>
+            <MultiSelect
+              className="w-3rem m-2 border-gray-600 font-semibold bg-gray-100"
+              selectedItemsLabel="select"
+              value={visibleColumns}
+              options={columns.filter((col) => col.hidden !== true)}
+              optionLabel="header"
+              onChange={(e) => onColumnToggle(e)}
+              dropdownIcon={() => {
+                return (
+                  <i className="pi pi-bars text-gray-800 bg-gray-100 "></i>
+                );
+              }}
+              tooltip="Show/Hide columns"
+              tooltipOptions={tooltipOptions}
+            />
+          </div>
         )}
         {clearFilterButton !== false && (
           <Button
@@ -716,7 +710,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       ? FILTER_LEVELS.WILD_SEARCH
                       : FILTER_LEVELS.NORMAL_SEARCH
                   );
-                }}>
+                }}
+              >
                 <VscRegex size={20} />
               </Button>
             </span>
@@ -784,131 +779,143 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}></i>
+        }}
+      ></i>
     );
   };
-
-  return (
-    <>
-      <DataTable
-        className={`${classNames}`}
-        style={handleRowClickEvent && { cursor: "pointer" }}
-        tableStyle={tableStyle}
-        stripedRows
-        size="small"
-        ref={dt}
-        value={
-          dataLoading && isColumnDefined
-            ? initialValue
-            : customGlobalFilter(value, globalFilterValue)
-        }
-        header={displayHeaderSection !== false && header}
-        rows={rows || 30}
-        dataKey={dataKey || "id"}
-        rowHover={rowHover}
-        paginator={paginator ?? (value && value.length > 0) ? true : false}
-        currentPageReportTemplate={currentPageReportTemplate}
-        globalFilterFields={globalFilterFields}
-        filters={filters}
-        onRowClick={handleRowClickEvent}
-        onRowDoubleClick={onRowDoubleClick}
-        selectionMode={selectionMode || null}
-        selection={selectedRecords}
-        onSelectionChange={handleCheckBoxSelectionEvent}
-        scrollable={scrollable}
-        scrollHeight={scrollHeight}
-        rowGroupMode={rowGroupMode}
-        groupRowsBy={groupRowsBy}
-        sortMode={sortMode || "single"}
-        sortField={selectedSortData.field}
-        sortOrder={selectedSortData.order}
-        responsiveLayout={responsiveLayout}
-        expandableRowGroups={expandableRowGroups}
-        expandedRows={expandedRows ? expandedRows : rowsExpanded}
-        onRowToggle={
-          onRowToggle
-            ? onRowToggle
-            : (e: any) => {
-                setRowsExpanded(e?.data);
-              }
-        }
-        rowExpansionTemplate={rowExpansionTemplate}
-        editMode={editMode}
-        onRowEditComplete={onRowEditComplete}
-        rowEditValidator={onRowEditValidator}
-        rowClassName={rowClassName}
-        emptyMessage={
-          isColumnDefined && !dataLoading ? (
-            <div>
-              <img
-                src="/images/no-result-found.png"
-                alt="No Result Found"
-                style={{
-                  minWidth: "100px",
-                  width: "12vw",
-                  display: "flex",
-                  margin: "auto",
-                }}
-                className="pt-3"
-              />
-              <p className="text-center text-lg md:text-3xl pt-3 text-600 pb-3">
-                {t("components.genericDataTable.noResultFound")}
-              </p>
-            </div>
-          ) : (
-            bodyTemplate
-          )
-        }
-        onRowExpand={onRowExpand}
-        onRowCollapse={onRowCollapse}
-        reorderableColumns={reorderableColumns}
-        reorderableRows={reorderableRows}
-        onValueChange={(value) => {
-          setFilteredData(value as any);
-        }}
-        onRowReorder={(e) => {
-          onRowReorder && onRowReorder(e);
-        }}
-        onFilter={(e) => {
-          setFilters((prev) => {
-            return {
-              ...prev,
-              ...e.filters,
-            };
-          });
-        }}
-        onSort={onSort}>
-        {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
-          <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
-        )}
-        {isColumnDefined && rowExpansionTemplate && !dataLoading && (
-          <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
-        )}
-        {isColumnDefined && !dataLoading && onClickIcon && (
-          <Column
-            body={iconColumnTemplate}
-            className="cursor-pointer"
-            style={{ width: "2rem" }}
+  const emptyMessageTemplate = () => (
+    <div
+      className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
+      style={{ color: "#6c757d" }}
+    >
+      <img
+        src="/images/no-result-found.png"
+        alt="No Results Found"
+        className="w-16rem md:min-w-10 mb-2"
+      />
+      <h2 className="text-xl md:text-2xl font-semibold mb-2">
+        {t("components.genericDataTable.noResultFound")}
+      </h2>
+      <p className="text-md text-gray-500 mb-3">
+        {t("components.genericDataTable.noResultsMessage")}
+      </p>
+      <div className="flex gap-3">
+        <Button
+          label="Reset Filters"
+          icon="pi pi-refresh"
+          className="p-button-outlined p-button-secondary hover:bg-secondary-100"
+          onClick={clearFilter}
+        />
+        {openNew && (
+          <Button
+            label={`Create New ${entityName ?? ""}`}
+            icon="pi pi-plus-circle"
+            className="p-button-outlined p-button-primary hover:bg-primary-100"
+            onClick={openNew}
           />
         )}
-        {isColumnDefined &&
-          reorderableColumns &&
-          reorderableRows &&
-          !dataLoading && (
-            <Column rowReorder style={{ width: "3rem" }}></Column>
-          )}
-        {isColumnDefined && dynamicColumns}
-        {isColumnDefined && editMode && !dataLoading && (
-          <Column
-            rowEditor
-            headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}></Column>
-        )}
-        {isColumnDefined && actionBodyTemplate && !dataLoading && (
-          <Column className="action-column" body={actionBodyTemplate}></Column>
-        )}
-      </DataTable>
-    </>
+      </div>
+    </div>
+  );
+  return (
+    <DataTable
+      className={`${classNames}`}
+      style={handleRowClickEvent && { cursor: "pointer" }}
+      tableStyle={tableStyle}
+      stripedRows
+      size="small"
+      ref={dt}
+      value={
+        dataLoading && isColumnDefined
+          ? initialValue
+          : customGlobalFilter(value, globalFilterValue)
+      }
+      header={displayHeaderSection !== false && header}
+      rows={rows ?? 30}
+      dataKey={dataKey ?? "id"}
+      rowHover={rowHover}
+      paginator={paginator ?? !!(value && value.length > 0)}
+      currentPageReportTemplate={currentPageReportTemplate}
+      globalFilterFields={globalFilterFields}
+      filters={filters}
+      onRowClick={handleRowClickEvent}
+      onRowDoubleClick={onRowDoubleClick}
+      selectionMode={selectionMode ?? null}
+      selection={selectedRecords}
+      onSelectionChange={handleCheckBoxSelectionEvent}
+      scrollable={scrollable}
+      scrollHeight={scrollHeight}
+      rowGroupMode={rowGroupMode}
+      groupRowsBy={groupRowsBy}
+      sortMode={sortMode ?? "single"}
+      sortField={selectedSortData.field}
+      sortOrder={selectedSortData.order}
+      responsiveLayout={responsiveLayout}
+      expandableRowGroups={expandableRowGroups}
+      expandedRows={expandedRows || rowsExpanded}
+      onRowToggle={
+        onRowToggle ||
+        ((e: any) => {
+          setRowsExpanded(e?.data);
+        })
+      }
+      rowExpansionTemplate={rowExpansionTemplate}
+      editMode={editMode}
+      onRowEditComplete={onRowEditComplete}
+      rowEditValidator={onRowEditValidator}
+      rowClassName={rowClassName}
+      emptyMessage={
+        isColumnDefined && !dataLoading ? emptyMessageTemplate : bodyTemplate
+      }
+      onRowExpand={onRowExpand}
+      onRowCollapse={onRowCollapse}
+      reorderableColumns={reorderableColumns}
+      reorderableRows={reorderableRows}
+      onValueChange={(value) => {
+        setFilteredData(value as any);
+      }}
+      onRowReorder={(e) => {
+        onRowReorder && onRowReorder(e);
+      }}
+      onFilter={(e) => {
+        setFilters((prev) => {
+          return {
+            ...prev,
+            ...e.filters,
+          };
+        });
+      }}
+      onSort={onSort}
+    >
+      {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
+        <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
+      )}
+      {isColumnDefined && rowExpansionTemplate && !dataLoading && (
+        <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
+      )}
+      {isColumnDefined && !dataLoading && onClickIcon && (
+        <Column
+          body={iconColumnTemplate}
+          className="cursor-pointer"
+          style={{ width: "2rem" }}
+        />
+      )}
+      {isColumnDefined &&
+        reorderableColumns &&
+        reorderableRows &&
+        !dataLoading && <Column rowReorder style={{ width: "3rem" }}></Column>}
+      {isColumnDefined && dynamicColumns}
+      {isColumnDefined && editMode && !dataLoading && (
+        <Column
+          rowEditor
+          headerStyle={{ width: "10%", minWidth: "6rem" }}
+          bodyStyle={{ textAlign: "center" }}
+        ></Column>
+      )}
+      {isColumnDefined && actionBodyTemplate && !dataLoading && (
+        <Column className="action-column" body={actionBodyTemplate}></Column>
+      )}
+    </DataTable>
   );
 };
 
