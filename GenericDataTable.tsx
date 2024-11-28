@@ -148,11 +148,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const customGlobalFilter = (data: any[], value: string) => {
     if (data && value) {
+      const distance = 2000 / globalSearchThreshold;
       const fuseOptionsForGlobalFilter = {
         keys:
           globalFilterFields || dynamicColumns?.map((col) => col.props.field),
         includeScore: true,
         threshold: globalSearchThreshold,
+        distance: distance,
       };
 
       const fuse = new Fuse(data, fuseOptionsForGlobalFilter);
@@ -699,7 +701,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 className="w-full md:w-20rem m-2 pr-6"
                 placeholder={`${t("components.genericDataTable.placeholder")}`}
                 value={globalFilterValue}
-                tooltip="Use wildsearch"
+                tooltip={
+                  !isNormalIntensity()
+                    ? "TurnOff wild search"
+                    : "TurnOn wild search"
+                }
                 tooltipOptions={{ position: "bottom" }}
               />
               <Button
