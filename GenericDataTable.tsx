@@ -117,7 +117,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     FILTER_LEVELS.NORMAL_SEARCH
   );
   const [selectedSortData, setSelectedSortData] = useState<IColumnSort>({
-    field: sortField || sortField === "" ? sortField : "id",
+    field: sortField ?? columns[0]?.field,
     order: sortOrder ?? 1,
   });
 
@@ -534,7 +534,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       orderedSelectedColumns.some((col) => col.field !== selectedSortData.field)
     ) {
       setSelectedSortData({
-        field: sortField ?? "id",
+        field: sortField ?? orderedSelectedColumns[0]?.field,
         order: sortOrder ?? 1,
       });
     }
