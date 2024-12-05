@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
 import { VscRegex } from "react-icons/vsc";
 import { classNames as conditionClassNames } from "primereact/utils";
+import noResultFoundImage from "./no-result-found.png";
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
@@ -301,6 +302,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const clearFilter = () => {
     clearAllFilter();
+  };
+
+  const resetFilter = () => {
+    clearAllFilter();
+    setGlobalFilterValue("");
   };
 
   const getFilterValue = (filters: any) => {
@@ -716,7 +722,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       ? FILTER_LEVELS.WILD_SEARCH
                       : FILTER_LEVELS.NORMAL_SEARCH
                   );
-                }}>
+                }}
+              >
                 <VscRegex size={20} />
               </Button>
             </span>
@@ -784,15 +791,17 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}></i>
+        }}
+      ></i>
     );
   };
   const emptyMessageTemplate = () => (
     <div
       className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
-      style={{ color: "#6c757d" }}>
+      style={{ color: "#6c757d" }}
+    >
       <img
-        src="/images/no-result-found.png"
+        src={noResultFoundImage}
         alt="No Results Found"
         className="w-16rem md:min-w-10 mb-2"
       />
@@ -807,7 +816,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           label="Reset Filters"
           icon="pi pi-refresh"
           className="p-button-outlined p-button-secondary hover:bg-secondary-100"
-          onClick={clearFilter}
+          onClick={resetFilter}
         />
         {openNew && (
           <Button
@@ -888,7 +897,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           };
         });
       }}
-      onSort={onSort}>
+      onSort={onSort}
+    >
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
         <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
       )}
@@ -911,7 +921,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <Column
           rowEditor
           headerStyle={{ width: "10%", minWidth: "6rem" }}
-          bodyStyle={{ textAlign: "center" }}></Column>
+          bodyStyle={{ textAlign: "center" }}
+        ></Column>
       )}
       {isColumnDefined && actionBodyTemplate && !dataLoading && (
         <Column className="action-column" body={actionBodyTemplate}></Column>
