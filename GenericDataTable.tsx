@@ -82,6 +82,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     visibleColumn,
     printPdf,
     entityName,
+    setDocumentCount
   } = props;
 
   const {
@@ -160,7 +161,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       };
 
       const fuse = new Fuse(data, fuseOptionsForGlobalFilter);
-
+      const searchData = fuse.search(value).map((data) => data.item);
+      setDocumentCount && setDocumentCount(searchData.length);
       return fuse.search(value).map((data) => data.item);
     }
     return data;
@@ -250,12 +252,16 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   }, []);
 
   useEffect(() => {
-    if (globalSearchValue) {
+    if (globalSearchValue?.value) {
       setGlobalFilterValue(globalSearchValue.value);
     }
+    if (globalSearchValue?.globalSearchThreshold) {
+      setGlobalSearchThreshold(globalSearchValue.globalSearchThreshold);
+    }
+    
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [globalSearchValue]);
+  }, [globalSearchValue?.value, globalSearchValue?.globalSearchThreshold]);
 
   const initFilters = () => {
     const generateFilters: any = {};

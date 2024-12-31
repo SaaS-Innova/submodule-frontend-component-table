@@ -75,7 +75,7 @@ export interface IGenericDataTableProps {
   ) => object | string;
   expandedRows?: any;
   onRowToggle?: any;
-  globalSearchValue?: { value: string };
+  globalSearchValue?: { value: string; globalSearchThreshold: number };
   onRowExpand?: (e: DataTableRowEvent) => void;
   onRowCollapse?: (e: DataTableRowEvent) => void;
   onRowDoubleClick?: (e: DataTableRowClickEvent) => void;
@@ -85,6 +85,7 @@ export interface IGenericDataTableProps {
   onRowReorder?: (e: any) => void;
   visibleColumn?: IvisibleColumnsProps;
   entityName?: string;
+  setDocumentCount?: (count: number) => void;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
