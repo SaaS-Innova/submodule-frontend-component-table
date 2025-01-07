@@ -392,7 +392,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     scaledWidth: any,
     scaledHeight: any
   ) => {
-    doc.addImage(img, "PNG", 15, 10, scaledWidth, scaledHeight);
+    doc.addImage(img, "PNG", 15, 6, scaledWidth, scaledHeight);
   };
   const findMarginTop = () => {
     let marginTop = 22;
@@ -429,17 +429,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       import("jspdf-autotable").then(async () => {
         const doc = new jsPDF.default("l", "mm", "a4");
         const img = new Image();
+        let imgWidth: number;
+        let imgHeight: number;
         if (logo) {
           img.src = logo;
         }
-        const { scaledWidth, scaledHeight }: any = await new Promise(
-          (resolve) => {
+        await new Promise((resolve) => {
+          if (logo) {
             img.onload = () => {
-              const dimensions = imageDimensions(img);
+              const dimensions: any = imageDimensions(img);
+              imgWidth = dimensions.scaledWidth;
+              imgHeight = dimensions.scaledHeight;
               resolve(dimensions);
             };
+          } else {
+            resolve({ scaledWidth: 0, scaledHeight: 0 });
           }
-        );
+        });
         let marginTop: number = findMarginTop();
         const filterValue = getFilterValue(filters);
         if (filterValue) {
@@ -460,9 +466,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               headerText ?? "",
               data.pageNumber,
               (doc as any).internal.getNumberOfPages(),
-              img,
-              scaledWidth,
-              scaledHeight
+              logo ? img : undefined,
+              imgWidth as number,
+              imgHeight as number
             );
           },
         });
