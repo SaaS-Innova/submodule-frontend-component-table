@@ -466,7 +466,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               headerText ?? "",
               data.pageNumber,
               (doc as any).internal.getNumberOfPages(),
-              logo ? img : undefined,
+              logo ? img : null,
               imgWidth as number,
               imgHeight as number
             );
