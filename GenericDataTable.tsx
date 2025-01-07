@@ -82,7 +82,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     visibleColumn,
     printPdf,
     entityName,
-    setDocumentCount
+    setDocumentCount,
   } = props;
 
   const {
@@ -252,13 +252,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   }, []);
 
   useEffect(() => {
-    if (globalSearchValue?.value) {
-      setGlobalFilterValue(globalSearchValue.value);
-    }
+    setGlobalFilterValue(globalSearchValue?.value ?? "");
+
     if (globalSearchValue?.globalSearchThreshold) {
-      setGlobalSearchThreshold(globalSearchValue.globalSearchThreshold);
+      setGlobalSearchThreshold(globalSearchValue?.globalSearchThreshold);
     }
-    
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalSearchValue?.value, globalSearchValue?.globalSearchThreshold]);
@@ -339,7 +337,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return filterValue.length > 0 ? filterValue.join(", ") : null;
   };
   let top = 0;
-  const addMetaData = (doc: any, tableName: string) => {
+  const addMetaData = (
+    doc: any,
+    tableName: string,
+    i: number,
+    pageCount: number,
+    img: HTMLImageElement | null,
+    imgWidth: number,
+    imgHeight: number
+  ) => {
     if (leftCornerDataPrint && Object.entries(leftCornerDataPrint).length > 0) {
       doc.setFontSize(10);
       doc.text(tableName, 280, top, {
@@ -367,11 +373,26 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       );
       top += 5;
     }
+    if (img) {
+      addCompanyLogoToDocument(doc, img, imgWidth, imgHeight);
+    }
+    doc.setFontSize(10);
+    doc.setPage(i);
+    const str = `${t("components.genericDataTable.pages", {
+      page: String(i),
+      pages: String(pageCount),
+    })}`;
+    doc.text(str, 280, top, {
+      align: "right",
+    });
   };
-  const addCompanyLogoToDocument = (doc: any, logo: string) => {
-    const img = new Image();
-    img.src = logo;
-    doc.addImage(img, "png", 15, 10, 50, 20);
+  const addCompanyLogoToDocument = (
+    doc: any,
+    img: any,
+    scaledWidth: any,
+    scaledHeight: any
+  ) => {
+    doc.addImage(img, "PNG", 15, 10, scaledWidth, scaledHeight);
   };
   const findMarginTop = () => {
     let marginTop = 22;
@@ -382,10 +403,43 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     }
     return leftCornerDataPrint ? marginTop : 27;
   };
+  const imageDimensions = (image: any) => {
+    const MAX_LOGO_WIDTH = 50;
+    const MAX_LOGO_HEIGHT = 20;
+    if (image) {
+      const imageWidth = image?.width;
+      const imageHeight = image?.height;
+      // Calculate the aspect ratio of the image
+      const aspectRatio = imageWidth / imageHeight;
+      // Calculate the scaled dimensions to fit within the given height and width
+      let scaledWidth, scaledHeight;
+      if (MAX_LOGO_WIDTH / MAX_LOGO_HEIGHT > aspectRatio) {
+        scaledWidth = MAX_LOGO_HEIGHT * aspectRatio;
+        scaledHeight = MAX_LOGO_HEIGHT;
+      } else {
+        scaledWidth = MAX_LOGO_WIDTH;
+        scaledHeight = MAX_LOGO_WIDTH / aspectRatio;
+      }
+      return { scaledWidth, scaledHeight };
+    }
+  };
+
   const savePdf = (parsedColumns: any, data: any, logo?: string) => {
     import("jspdf").then((jsPDF) => {
-      import("jspdf-autotable").then(() => {
+      import("jspdf-autotable").then(async () => {
         const doc = new jsPDF.default("l", "mm", "a4");
+        const img = new Image();
+        if (logo) {
+          img.src = logo;
+        }
+        const { scaledWidth, scaledHeight }: any = await new Promise(
+          (resolve) => {
+            img.onload = () => {
+              const dimensions = imageDimensions(img);
+              resolve(dimensions);
+            };
+          }
+        );
         let marginTop: number = findMarginTop();
         const filterValue = getFilterValue(filters);
         if (filterValue) {
@@ -399,26 +453,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           body: data,
           didDrawCell: () => {},
           margin: { top: marginTop },
-          didDrawPage: () => {
+          didDrawPage: (data) => {
             top = 15;
-            addMetaData(doc, headerText ?? "");
+            addMetaData(
+              doc,
+              headerText ?? "",
+              data.pageNumber,
+              (doc as any).internal.getNumberOfPages(),
+              img,
+              scaledWidth,
+              scaledHeight
+            );
           },
         });
-        const pageCount = (doc as any).internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-          if (logo) {
-            addCompanyLogoToDocument(doc, logo);
-          }
-          doc.setFontSize(10);
-          doc.setPage(i);
-          const str = `${t("components.genericDataTable.pages", {
-            page: String(i),
-            pages: String(pageCount),
-          })}`;
-          doc.text(str, 280, top, {
-            align: "right",
-          });
-        }
+
         doc.save(`${tableName ?? "dataTable"}.pdf`);
       });
     });
@@ -703,6 +751,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               <InputText
                 onChange={(e) => {
                   setGlobalFilterValue(e.target.value);
+                  setFilteredData(customGlobalFilter(value, e.target.value));
                 }}
                 className="w-full md:w-20rem m-2 pr-6"
                 placeholder={`${t("components.genericDataTable.placeholder")}`}
