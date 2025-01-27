@@ -665,7 +665,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     <div className="flex flex-row flex-wrap justify-content-between">
       {headerText !== undefined && (
         <div className="flex align-items-center justify-content-center font-bold m-2">
-          {headerText}
+          <span className="capitalize-first">{headerText}</span>
         </div>
       )}
       <div className="flex justify-content-between">
