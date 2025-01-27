@@ -75,7 +75,7 @@ export interface IGenericDataTableProps {
   ) => object | string;
   expandedRows?: any;
   onRowToggle?: any;
-  globalSearchValue?: { value: string; globalSearchThreshold: number };
+  globalSearchValue?: { value: string; globalSearchThreshold?: number };
   onRowExpand?: (e: DataTableRowEvent) => void;
   onRowCollapse?: (e: DataTableRowEvent) => void;
   onRowDoubleClick?: (e: DataTableRowClickEvent) => void;
