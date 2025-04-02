@@ -923,7 +923,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       sortMode={sortMode ?? "single"}
       sortField={selectedSortData.field}
       sortOrder={selectedSortData.order}
-      responsiveLayout={responsiveLayout}
+      breakpoint={responsiveLayout}
       expandableRowGroups={expandableRowGroups}
       expandedRows={expandedRows || rowsExpanded}
       onRowToggle={
