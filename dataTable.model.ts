@@ -80,6 +80,7 @@ export interface IGenericDataTableProps {
   onRowCollapse?: (e: DataTableRowEvent) => void;
   onRowDoubleClick?: (e: DataTableRowClickEvent) => void;
   onClickIcon?: (e: any) => void;
+  onRowEditInit?: (e: DataTableRowEvent) => void;
   reorderableColumns?: boolean;
   reorderableRows?: boolean;
   onRowReorder?: (e: any) => void;

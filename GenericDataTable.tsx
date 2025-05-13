@@ -73,6 +73,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     handleDropdownChange,
     globalSearchValue,
     onRowDoubleClick,
+    onRowEditInit,
     onRowExpand,
     onRowCollapse,
     onClickIcon,
@@ -913,6 +914,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       filters={filters}
       onRowClick={handleRowClickEvent}
       onRowDoubleClick={onRowDoubleClick}
+      onRowEditInit={onRowEditInit}
       selectionMode={selectionMode ?? null}
       selection={selectedRecords}
       onSelectionChange={handleCheckBoxSelectionEvent}
