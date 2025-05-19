@@ -221,6 +221,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           filterElement={col?.filterElement}
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
+          maxConstraints={col.maxConstraints}
         />
       ));
       return dynamicColumn;

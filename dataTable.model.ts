@@ -108,7 +108,7 @@ export interface IColumn {
   sortOrder?: SortOrder;
   showFilterMenu?: boolean;
   showFilterMatchModes?: boolean;
-
+  maxConstraints?: number;
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
