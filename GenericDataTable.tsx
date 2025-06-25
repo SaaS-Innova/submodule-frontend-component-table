@@ -49,6 +49,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     selectionMode,
     selectedRecords,
     handleCheckBoxSelectionEvent,
+    isRowSelectable,
     scrollable,
     scrollHeight,
     rowGroupMode,
@@ -928,6 +929,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       sortOrder={selectedSortData.order}
       breakpoint={responsiveLayout}
       expandableRowGroups={expandableRowGroups}
+      isDataSelectable={isRowSelectable}
       expandedRows={expandedRows || rowsExpanded}
       onRowToggle={
         onRowToggle ||

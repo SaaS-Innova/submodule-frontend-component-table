@@ -10,6 +10,7 @@ import {
   DataTableRowEvent,
   DataTableSelectionMultipleChangeEvent,
   SortOrder,
+  DataTableDataSelectableEvent,
 } from "primereact/datatable";
 
 export interface IGenericDataTableProps {
@@ -87,6 +88,7 @@ export interface IGenericDataTableProps {
   visibleColumn?: IvisibleColumnsProps;
   entityName?: string;
   setDocumentCount?: (count: number) => void;
+  isRowSelectable?: (e: DataTableDataSelectableEvent) => boolean;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
