@@ -85,6 +85,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     printPdf,
     entityName,
     setDocumentCount,
+    setFilterSearch,
+    onPageChange,
+    totalCount,
+    page,
+    transformPrimeNgFilterObjectToArray,
   } = props;
 
   const {
@@ -108,7 +113,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   } = visibleColumn || {};
 
   const [filters, setFilters] = useState({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      operator: FilterOperator.OR,
+      constraints: [
+        { value: null, matchMode: FilterMatchMode.CONTAINS, filterFields: [] },
+      ],
+    },
   });
   const dt = useRef<any>(null);
   const [rowsExpanded, setRowsExpanded] = useState<any>(null);
@@ -305,6 +315,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         ...generateFilters,
       };
     });
+    setFilterSearch && setFilterSearch([]);
   };
 
   const clearFilter = () => {
@@ -617,8 +628,42 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       );
   };
 
+  function applySingleSortFilter(
+    filters: any[] = [],
+    sort: { field: string; order: "ASC" | "DESC" | number }
+  ): any[] {
+    const sortField = sort.field;
+    const sortOrder = sort.order;
+
+    const updated = filters.map((item) => {
+      if (item.field === sortField) {
+        return { ...item, order: sortOrder };
+      }
+      const { order, ...rest } = item;
+      return rest;
+    });
+    const exists = updated.some((item) => item.field === sortField);
+    if (!exists) {
+      updated.push({
+        field: sortField,
+        order: sortOrder,
+      });
+    }
+    return updated;
+  }
+
   const onSort = (e: DataTableStateEvent) => {
     setSelectedSortData({ field: e.sortField, order: e.sortOrder });
+    const updatedFilters = applySingleSortFilter(
+      transformPrimeNgFilterObjectToArray &&
+        transformPrimeNgFilterObjectToArray(filters),
+      {
+        field: e.sortField,
+        order: e.sortOrder === 1 ? "ASC" : "DESC",
+      }
+    );
+    setFilterSearch && setFilterSearch(updatedFilters);
+
     if (isStoreSorting) {
       const columnsWithUpdatedSortOrder = updateSortOrder(visibleColumns, {
         field: e.sortField,
@@ -630,6 +675,24 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           columnsWithUpdatedSortOrder
         );
     }
+  };
+
+  const onFilter = (e: DataTableStateEvent) => {
+    const transformFilter =
+      transformPrimeNgFilterObjectToArray &&
+      transformPrimeNgFilterObjectToArray(e.filters);
+
+    const updatedFilters = applySingleSortFilter(transformFilter || [], {
+      field: selectedSortData?.field,
+      order: selectedSortData?.order === 1 ? "ASC" : "DESC",
+    });
+    setFilterSearch && setFilterSearch(updatedFilters);
+    setFilters((prev) => {
+      return {
+        ...prev,
+        ...e.filters,
+      };
+    });
   };
 
   const searchList = (event: { query: string }) => {
@@ -662,6 +725,49 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const isNormalIntensity = () => {
     return globalSearchThreshold === FILTER_LEVELS.NORMAL_SEARCH;
+  };
+  const debounceTimeoutRef = useRef<any>(null);
+  const handleGlobalSearch = (value: string) => {
+    setFilters((prev: any) => {
+      return {
+        ...prev,
+        global: {
+          operator: FilterOperator.OR,
+          constraints: [
+            {
+              value: value,
+              matchMode: FilterMatchMode.CONTAINS,
+              filterFields: visibleColumns.map((col) => col.field),
+            },
+          ],
+        },
+      };
+    });
+
+    const transformed =
+      transformPrimeNgFilterObjectToArray &&
+      transformPrimeNgFilterObjectToArray(filters);
+    // Remove duplicate 'global' field if already present in transformed
+    if (transformed) {
+      const filteredTransformed = transformed?.filter(
+        (item: any) => item.field !== "global"
+      );
+      setFilterSearch &&
+        setFilterSearch([
+          {
+            field: "global",
+            operator: "or",
+            constraints: [
+              {
+                value: value,
+                matchMode: FilterMatchMode.CONTAINS,
+                filterFields: visibleColumns.map((col) => col.field),
+              },
+            ],
+          },
+          ...filteredTransformed,
+        ]);
+    }
   };
 
   const header = (
@@ -760,6 +866,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               <InputText
                 onChange={(e) => {
                   setGlobalFilterValue(e.target.value);
+                  if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
+                  }
+                  debounceTimeoutRef.current = setTimeout(() => {
+                    handleGlobalSearch(e.target.value);
+                  }, 1000);
                   setFilteredData(customGlobalFilter(value, e.target.value));
                 }}
                 className="w-full md:w-20rem m-2 pr-6"
@@ -904,10 +1016,16 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       value={
         dataLoading && isColumnDefined
           ? initialValue
+          : totalCount
+          ? value
           : customGlobalFilter(value, globalFilterValue)
       }
+      first={page && rows ? page * rows : 0}
       header={displayHeaderSection !== false && header}
       rows={rows ?? 30}
+      totalRecords={totalCount ?? undefined}
+      lazy={totalCount ? true : false}
+      onPage={onPageChange}
       dataKey={dataKey ?? "id"}
       rowHover={rowHover}
       paginator={paginator ?? !!(value && value.length > 0)}
@@ -955,14 +1073,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       onRowReorder={(e) => {
         onRowReorder && onRowReorder(e);
       }}
-      onFilter={(e) => {
-        setFilters((prev) => {
-          return {
-            ...prev,
-            ...e.filters,
-          };
-        });
-      }}
+      onFilter={onFilter}
       onSort={onSort}
     >
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (

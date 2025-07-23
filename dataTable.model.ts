@@ -4,6 +4,7 @@ import {
   ColumnFilterElementTemplateOptions,
 } from "primereact/column";
 import {
+  DataTablePageEvent,
   DataTableRowClassNameOptions,
   DataTableRowClickEvent,
   DataTableRowData,
@@ -89,6 +90,11 @@ export interface IGenericDataTableProps {
   entityName?: string;
   setDocumentCount?: (count: number) => void;
   isRowSelectable?: (e: DataTableDataSelectableEvent) => boolean;
+  setFilterSearch?: (filterSearch: any) => void;
+  onPageChange?: (event: DataTablePageEvent) => void;
+  totalCount?: number;
+  page?: number;
+  transformPrimeNgFilterObjectToArray?: (filters: any) => any[];
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
