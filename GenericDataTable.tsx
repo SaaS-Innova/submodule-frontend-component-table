@@ -655,8 +655,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const onSort = (e: DataTableStateEvent) => {
     setSelectedSortData({ field: e.sortField, order: e.sortOrder });
     const updatedFilters = applySingleSortFilter(
-      transformPrimeNgFilterObjectToArray &&
-        transformPrimeNgFilterObjectToArray(filters),
+      transformPrimeNgFilterObjectToArray?.(filters),
       {
         field: e.sortField,
         order: e.sortOrder === 1 ? "ASC" : "DESC",
@@ -678,14 +677,26 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const onFilter = (e: DataTableStateEvent) => {
-    const transformFilter =
-      transformPrimeNgFilterObjectToArray &&
-      transformPrimeNgFilterObjectToArray(e.filters);
+    const transformFilter = transformPrimeNgFilterObjectToArray?.(e.filters);
 
     const updatedFilters = applySingleSortFilter(transformFilter || [], {
       field: selectedSortData?.field,
       order: selectedSortData?.order === 1 ? "ASC" : "DESC",
     });
+
+    if (globalFilterValue) {
+      updatedFilters.push({
+        field: "global",
+        operator: FilterOperator.AND,
+        constraints: [
+          {
+            value: globalFilterValue,
+            matchMode: FilterMatchMode.CONTAINS,
+            filterFields: visibleColumns.map((col) => col.field),
+          },
+        ],
+      });
+    }
     setFilterSearch && setFilterSearch(updatedFilters);
     setFilters((prev) => {
       return {
@@ -728,11 +739,21 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
   const debounceTimeoutRef = useRef<any>(null);
   const handleGlobalSearch = (value: string) => {
-    setFilters((prev: any) => {
-      return {
-        ...prev,
-        global: {
-          operator: FilterOperator.OR,
+    const transformed = transformPrimeNgFilterObjectToArray?.(filters);
+    // Remove duplicate 'global' field if already present in transformed
+    if (transformed) {
+      const filteredTransformed = transformed?.filter(
+        (item: any) => item.field !== "global"
+      );
+      const updatedFilters = applySingleSortFilter(filteredTransformed || [], {
+        field: selectedSortData?.field,
+        order: selectedSortData?.order === 1 ? "ASC" : "DESC",
+      });
+
+      setFilterSearch?.([
+        {
+          field: "global",
+          operator: FilterOperator.AND,
           constraints: [
             {
               value: value,
@@ -741,32 +762,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             },
           ],
         },
-      };
-    });
-
-    const transformed =
-      transformPrimeNgFilterObjectToArray &&
-      transformPrimeNgFilterObjectToArray(filters);
-    // Remove duplicate 'global' field if already present in transformed
-    if (transformed) {
-      const filteredTransformed = transformed?.filter(
-        (item: any) => item.field !== "global"
-      );
-      setFilterSearch &&
-        setFilterSearch([
-          {
-            field: "global",
-            operator: "or",
-            constraints: [
-              {
-                value: value,
-                matchMode: FilterMatchMode.CONTAINS,
-                filterFields: visibleColumns.map((col) => col.field),
-              },
-            ],
-          },
-          ...filteredTransformed,
-        ]);
+        ...updatedFilters,
+      ]);
     }
   };
 
