@@ -20,6 +20,8 @@ import Fuse from "fuse.js";
 import { VscRegex } from "react-icons/vsc";
 import { classNames as conditionClassNames } from "primereact/utils";
 import noResultFoundImage from "./no-result-found.png";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
@@ -504,45 +506,46 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       savePdf(parsedColumns, visibleColumnsData);
     }
   };
-  const exportExcel = () => {
-    import("xlsx").then((xlsx) => {
-      const headers = visibleColumns.map((col) => col.header);
-      const printCreatedBy = `${currentUser?.first_name} ${currentUser?.last_name}`;
-      const visibleColumnsData = getVisibleColumnsListData(filteredData);
-      const filterValue = getFilterValue(filters);
-      const worksheetData = [[], headers, ...visibleColumnsData];
-      if (tableName) {
-        worksheetData.splice(0, 0, [`${tableName}`]);
+  const exportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(tableName || "Data");
+    const headers = visibleColumns.map((col) => col.header);
+    const printCreatedBy = `${currentUser?.first_name} ${currentUser?.last_name}`;
+    const visibleColumnsData = getVisibleColumnsListData(filteredData);
+    const filterValue = getFilterValue(filters);
+    let insertionIndex = 1;
+    if (leftCornerDataPrint) {
+      for (const [key, value] of Object.entries(leftCornerDataPrint)) {
+        worksheet.addRow([`${key}:`, `${value}`]);
+        insertionIndex++;
       }
-      let insertionIndex = 0;
-      if (leftCornerDataPrint) {
-        Object.entries(leftCornerDataPrint).forEach(([key, value]) => {
-          worksheetData.splice(insertionIndex++, 0, [`${key}:`, `${value}`]);
-        });
-      } else {
-        worksheetData.splice(insertionIndex++, 0, [
-          `${t("components.genericDataTable.printed")}:`,
-          `${printedDate}`,
-        ]);
-        worksheetData.splice(insertionIndex++, 0, [
-          `${t("components.genericDataTable.printedBy")}:`,
-          ` ${printCreatedBy}`,
-        ]);
-      }
-      if (filterValue) {
-        worksheetData.splice(insertionIndex + 2, 0, [filterValue]);
-      }
-      const worksheet = xlsx.utils.aoa_to_sheet(worksheetData);
-      const workbook = {
-        Sheets: { [`${tableName}`]: worksheet },
-        SheetNames: [`${tableName}`],
-      };
-      const excelBuffer = xlsx.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
-      });
-      saveAsExcelFile(excelBuffer, tableName ?? "dataTable");
+    } else {
+      worksheet.addRow([
+        `${t("components.genericDataTable.printed")}:`,
+        `${printedDate}`,
+      ]);
+      insertionIndex++;
+      worksheet.addRow([
+        `${t("components.genericDataTable.printedBy")}:`,
+        ` ${printCreatedBy}`,
+      ]);
+      insertionIndex++;
+    }
+    if (filterValue) {
+      worksheet.insertRow(insertionIndex + 1, [filterValue]);
+      insertionIndex++;
+    }
+    if (tableName) {
+      worksheet.insertRow(1, [tableName]);
+      insertionIndex++;
+    }
+    worksheet.addRow([]); // empty row before headers
+    worksheet.addRow(headers);
+    visibleColumnsData.forEach((row: any) => {
+      worksheet.addRow(row);
     });
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `${tableName ?? "dataTable"}.xlsx`);
   };
 
   const getVisibleColumnsListData = (columns: IColumn[]) => {
@@ -652,36 +655,19 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return updated;
   }
 
-  const onSort = (e: DataTableStateEvent) => {
-    setSelectedSortData({ field: e.sortField, order: e.sortOrder });
-    const updatedFilters = applySingleSortFilter(
-      transformPrimeNgFilterObjectToArray?.(filters),
-      {
-        field: e.sortField,
-        order: e.sortOrder === 1 ? "ASC" : "DESC",
-      }
-    );
-    setFilterSearch && setFilterSearch(updatedFilters);
+  const buildUpdatedFilters = (
+    filters: any,
+    sortField: string | undefined,
+    sortOrder: 1 | 0 | -1 | null | undefined,
+    globalFilterValue: string,
+    visibleColumns: { field: string }[]
+  ) => {
+    const transformedFilters =
+      transformPrimeNgFilterObjectToArray?.(filters) || [];
 
-    if (isStoreSorting) {
-      const columnsWithUpdatedSortOrder = updateSortOrder(visibleColumns, {
-        field: e.sortField,
-        order: e.sortOrder,
-      });
-      componentNameForSelectingColumns &&
-        filterService?.setComponentValue(
-          componentNameForSelectingColumns,
-          columnsWithUpdatedSortOrder
-        );
-    }
-  };
-
-  const onFilter = (e: DataTableStateEvent) => {
-    const transformFilter = transformPrimeNgFilterObjectToArray?.(e.filters);
-
-    const updatedFilters = applySingleSortFilter(transformFilter || [], {
-      field: selectedSortData?.field,
-      order: selectedSortData?.order === 1 ? "ASC" : "DESC",
+    const updatedFilters = applySingleSortFilter(transformedFilters, {
+      field: sortField ?? "id",
+      order: sortOrder === 1 ? "ASC" : "DESC",
     });
 
     if (globalFilterValue) {
@@ -697,7 +683,46 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         ],
       });
     }
-    setFilterSearch && setFilterSearch(updatedFilters);
+
+    return updatedFilters;
+  };
+
+  const onSort = (e: DataTableStateEvent) => {
+    setSelectedSortData({ field: e.sortField, order: e.sortOrder });
+
+    const updatedFilters = buildUpdatedFilters(
+      filters,
+      e.sortField,
+      e.sortOrder,
+      globalFilterValue,
+      visibleColumns
+    );
+
+    setFilterSearch?.(updatedFilters);
+
+    if (isStoreSorting) {
+      const columnsWithUpdatedSortOrder = updateSortOrder(visibleColumns, {
+        field: e.sortField,
+        order: e.sortOrder,
+      });
+      componentNameForSelectingColumns &&
+        filterService?.setComponentValue(
+          componentNameForSelectingColumns,
+          columnsWithUpdatedSortOrder
+        );
+    }
+  };
+
+  const onFilter = (e: DataTableStateEvent) => {
+    const updatedFilters = buildUpdatedFilters(
+      e.filters,
+      selectedSortData?.field,
+      selectedSortData?.order,
+      globalFilterValue,
+      visibleColumns
+    );
+
+    setFilterSearch?.(updatedFilters);
     setFilters((prev) => {
       return {
         ...prev,
