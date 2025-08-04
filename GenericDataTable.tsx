@@ -568,24 +568,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return data;
   };
 
-  const saveAsExcelFile = (buffer: any, fileName: string) => {
-    import("file-saver").then((module) => {
-      if (module?.default) {
-        let EXCEL_TYPE =
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-        let EXCEL_EXTENSION = ".xlsx";
-        const data = new Blob([buffer], {
-          type: EXCEL_TYPE,
-        });
-
-        module.default.saveAs(
-          data,
-          fileName + "_export_" + new Date().getTime() + EXCEL_EXTENSION
-        );
-      }
-    });
-  };
-
   const updateSortOrder = (columns: IColumn[], sortData: IColumnSort) => {
     return columns.map((col) => {
       if (col.field === sortData.field) {
