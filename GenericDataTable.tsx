@@ -22,6 +22,7 @@ import { classNames as conditionClassNames } from "primereact/utils";
 import noResultFoundImage from "./no-result-found.png";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { capitalizeFirstLetter } from "../../../library/utilities/helperFunction";
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
@@ -471,7 +472,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           marginTop += 5;
         }
         autoTable(doc, {
-          head: [parsedColumns],
+          head: [parsedColumns?.map((col: any) => col?.title)],
           body: data,
           didDrawCell: () => {},
           margin: { top: marginTop },
@@ -496,7 +497,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const exportPdf = (filteredData: any) => {
     const parsedColumns = visibleColumns.map((column: IColumn) => ({
-      title: column.header,
+      title: capitalizeFirstLetter(column?.header),
       dataKey: column.field,
     }));
     const visibleColumnsData = getVisibleColumnsListData(filteredData);
