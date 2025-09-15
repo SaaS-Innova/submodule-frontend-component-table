@@ -95,6 +95,7 @@ export interface IGenericDataTableProps {
   totalCount?: number;
   page?: number;
   transformPrimeNgFilterObjectToArray?: (filters: any) => any[];
+  onClickReadingReceipt?: (data: any) => void;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
