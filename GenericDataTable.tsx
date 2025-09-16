@@ -1,8 +1,6 @@
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable, DataTableStateEvent } from "primereact/datatable";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
@@ -882,49 +880,46 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <div className="flex">
           {globalSearchOption !== false && (
             <span className="md:mt-0 p-input-icon-left text-center">
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search ml-2"> </InputIcon>
-                <InputText
-                  onChange={(e) => {
-                    setGlobalFilterValue(e.target.value);
-                    if (debounceTimeoutRef.current) {
-                      clearTimeout(debounceTimeoutRef.current);
-                    }
-                    debounceTimeoutRef.current = setTimeout(() => {
-                      handleGlobalSearch(e.target.value);
-                    }, 1000);
-                    setFilteredData(customGlobalFilter(value, e.target.value));
-                  }}
-                  className="w-full md:w-20rem m-2 pr-6"
-                  placeholder={`${t(
-                    "components.genericDataTable.placeholder"
-                  )}`}
-                  value={globalFilterValue}
-                />
-                <Button
-                  type="button"
-                  className={conditionClassNames(
-                    "-ml-6 mb-2 p-button-outlined p-button-secondary py-2 px-2",
-                    {
-                      "bg-gray-200 text-gray-800": !isNormalIntensity(),
-                    }
-                  )}
-                  tooltip={
-                    !isNormalIntensity()
-                      ? "Turnoff wild search"
-                      : "Turnon wild search"
+              <i className="pi pi-search ml-2" />
+              <InputText
+                onChange={(e) => {
+                  setGlobalFilterValue(e.target.value);
+                  if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
                   }
-                  tooltipOptions={{ position: "bottom" }}
-                  onClick={() => {
-                    setGlobalSearchThreshold(
-                      isNormalIntensity()
-                        ? FILTER_LEVELS.WILD_SEARCH
-                        : FILTER_LEVELS.NORMAL_SEARCH
-                    );
-                  }}>
-                  <VscRegex size={20} />
-                </Button>
-              </IconField>
+                  debounceTimeoutRef.current = setTimeout(() => {
+                    handleGlobalSearch(e.target.value);
+                  }, 1000);
+                  setFilteredData(customGlobalFilter(value, e.target.value));
+                }}
+                className="w-full md:w-20rem m-2 pr-6"
+                placeholder={`${t("components.genericDataTable.placeholder")}`}
+                value={globalFilterValue}
+              />
+              <Button
+                type="button"
+                className={conditionClassNames(
+                  "-ml-6 mb-2 p-button-outlined p-button-secondary py-2 px-2",
+                  {
+                    "bg-gray-200 text-gray-800": !isNormalIntensity(),
+                  }
+                )}
+                tooltip={
+                  !isNormalIntensity()
+                    ? "Turnoff wild search"
+                    : "Turnon wild search"
+                }
+                tooltipOptions={{ position: "bottom" }}
+                onClick={() => {
+                  setGlobalSearchThreshold(
+                    isNormalIntensity()
+                      ? FILTER_LEVELS.WILD_SEARCH
+                      : FILTER_LEVELS.NORMAL_SEARCH
+                  );
+                }}
+              >
+                <VscRegex size={20} />
+              </Button>
             </span>
           )}
         </div>
@@ -990,13 +985,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
         onClick={(event) => {
           handleClickIcon(rowData, event);
-        }}></i>
+        }}
+      ></i>
     );
   };
   const emptyMessageTemplate = () => (
     <div
       className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
-      style={{ color: "#6c757d" }}>
+      style={{ color: "#6c757d" }}
+    >
       <img
         src={noResultFoundImage}
         alt="No Results Found"
@@ -1095,7 +1092,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onRowReorder && onRowReorder(e);
       }}
       onFilter={onFilter}
-      onSort={onSort}>
+      onSort={onSort}
+    >
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
         <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
       )}
@@ -1118,7 +1116,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <Column
           rowEditor
           headerStyle={{ width: "10%", minWidth: "6rem" }}
-          bodyStyle={{ textAlign: "center" }}></Column>
+          bodyStyle={{ textAlign: "center" }}
+        ></Column>
       )}
       {isColumnDefined && actionBodyTemplate && !dataLoading && (
         <Column className="action-column" body={actionBodyTemplate}></Column>
