@@ -94,6 +94,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     page,
     transformPrimeNgFilterObjectToArray,
     onClickReadingReceipt,
+    rowGroupHeaderTemplate,
   } = props;
 
   const {
@@ -137,8 +138,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     field: sortField ?? columns[0]?.field,
     order: sortOrder ?? 1,
   });
-
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [multiSortMeta, setMultiSortMeta] = useState<IColumnSort[]>([]);
 
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
@@ -672,6 +673,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const onSort = (e: DataTableStateEvent) => {
+    if (e.multiSortMeta) {
+      setMultiSortMeta(e.multiSortMeta);
+    }
     setSelectedSortData({ field: e.sortField, order: e.sortOrder });
 
     const updatedFilters = buildUpdatedFilters(
@@ -1093,6 +1097,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       }}
       onFilter={onFilter}
       onSort={onSort}
+      multiSortMeta={multiSortMeta}
+      rowGroupHeaderTemplate={rowGroupHeaderTemplate}
     >
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
         <Column selectionMode="multiple" style={{ width: "2.5rem" }} />

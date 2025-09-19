@@ -121,6 +121,7 @@ export interface IColumn {
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
+  rowGroupHeaderTemplate?: (data: any) => React.ReactNode;
 }
 
 export interface IColumnSort {
