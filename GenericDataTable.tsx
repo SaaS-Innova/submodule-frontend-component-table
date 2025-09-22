@@ -27,6 +27,7 @@ const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
 };
+const SORT_MODE_MULTIPLE = "multiple";
 
 const GenericDataTable = (props: IGenericDataTableProps) => {
   const { t } = useTranslation();
@@ -265,8 +266,17 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columns, componentNameForSelectingColumns]);
+
   useEffect(() => {
     initFilters();
+    if (sortField && sortMode === SORT_MODE_MULTIPLE) {
+      setMultiSortMeta([
+        {
+          field: sortField,
+          order: sortOrder,
+        },
+      ]);
+    }
   }, []);
 
   useEffect(() => {
