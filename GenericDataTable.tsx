@@ -29,7 +29,7 @@ const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
 };
-
+import { BsReceiptCutoff } from "react-icons/bs";
 const GenericDataTable = (props: IGenericDataTableProps) => {
   const { t } = useTranslation();
   const {
@@ -834,14 +834,14 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         {onClickReadingReceipt && (
           <Button
             type="button"
-            icon="pi pi-chart-bar"
             tooltip="Reading receipt"
             tooltipOptions={tooltipOptions}
             className="p-button-outlined p-button-secondary m-2"
             onClick={() =>
               onClickReadingReceipt(filteredData.map((item) => item.id))
-            }
-          />
+            }>
+            <BsReceiptCutoff className="text-xl" />
+          </Button>
         )}
         {clearFilterButton !== false && (
           <Button
