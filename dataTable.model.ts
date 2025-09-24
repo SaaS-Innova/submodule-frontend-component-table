@@ -96,6 +96,7 @@ export interface IGenericDataTableProps {
   page?: number;
   transformPrimeNgFilterObjectToArray?: (filters: any) => any[];
   onClickReadingReceipt?: (data: any) => void;
+  rowGroupHeaderTemplate?: (data: any) => React.ReactNode;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

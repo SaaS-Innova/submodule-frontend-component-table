@@ -1,8 +1,6 @@
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable, DataTableStateEvent } from "primereact/datatable";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
@@ -30,6 +28,8 @@ const FILTER_LEVELS = {
   WILD_SEARCH: 0.3,
 };
 import { BsReceiptCutoff } from "react-icons/bs";
+const SORT_MODE_MULTIPLE = "multiple";
+
 const GenericDataTable = (props: IGenericDataTableProps) => {
   const { t } = useTranslation();
   const {
@@ -96,6 +96,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     page,
     transformPrimeNgFilterObjectToArray,
     onClickReadingReceipt,
+    rowGroupHeaderTemplate,
   } = props;
 
   const {
@@ -139,8 +140,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     field: sortField ?? columns[0]?.field,
     order: sortOrder ?? 1,
   });
-
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [multiSortMeta, setMultiSortMeta] = useState<IColumnSort[]>([]);
 
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
@@ -266,8 +267,17 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columns, componentNameForSelectingColumns]);
+
   useEffect(() => {
     initFilters();
+    if (sortField && sortMode === SORT_MODE_MULTIPLE) {
+      setMultiSortMeta([
+        {
+          field: sortField,
+          order: sortOrder,
+        },
+      ]);
+    }
   }, []);
 
   useEffect(() => {
@@ -674,6 +684,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const onSort = (e: DataTableStateEvent) => {
+    if (e.multiSortMeta) {
+      setMultiSortMeta(e.multiSortMeta);
+    }
     setSelectedSortData({ field: e.sortField, order: e.sortOrder });
 
     const updatedFilters = buildUpdatedFilters(
@@ -882,49 +895,45 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <div className="flex">
           {globalSearchOption !== false && (
             <span className="md:mt-0 p-input-icon-left text-center">
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search ml-2"> </InputIcon>
-                <InputText
-                  onChange={(e) => {
-                    setGlobalFilterValue(e.target.value);
-                    if (debounceTimeoutRef.current) {
-                      clearTimeout(debounceTimeoutRef.current);
-                    }
-                    debounceTimeoutRef.current = setTimeout(() => {
-                      handleGlobalSearch(e.target.value);
-                    }, 1000);
-                    setFilteredData(customGlobalFilter(value, e.target.value));
-                  }}
-                  className="w-full md:w-20rem m-2 pr-6"
-                  placeholder={`${t(
-                    "components.genericDataTable.placeholder"
-                  )}`}
-                  value={globalFilterValue}
-                />
-                <Button
-                  type="button"
-                  className={conditionClassNames(
-                    "-ml-6 mb-2 p-button-outlined p-button-secondary py-2 px-2",
-                    {
-                      "bg-gray-200 text-gray-800": !isNormalIntensity(),
-                    }
-                  )}
-                  tooltip={
-                    !isNormalIntensity()
-                      ? "Turnoff wild search"
-                      : "Turnon wild search"
+              <i className="pi pi-search ml-2" />
+              <InputText
+                onChange={(e) => {
+                  setGlobalFilterValue(e.target.value);
+                  if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
                   }
-                  tooltipOptions={{ position: "bottom" }}
-                  onClick={() => {
-                    setGlobalSearchThreshold(
-                      isNormalIntensity()
-                        ? FILTER_LEVELS.WILD_SEARCH
-                        : FILTER_LEVELS.NORMAL_SEARCH
-                    );
-                  }}>
-                  <VscRegex size={20} />
-                </Button>
-              </IconField>
+                  debounceTimeoutRef.current = setTimeout(() => {
+                    handleGlobalSearch(e.target.value);
+                  }, 1000);
+                  setFilteredData(customGlobalFilter(value, e.target.value));
+                }}
+                className="w-full md:w-20rem m-2 pr-6"
+                placeholder={`${t("components.genericDataTable.placeholder")}`}
+                value={globalFilterValue}
+              />
+              <Button
+                type="button"
+                className={conditionClassNames(
+                  "-ml-6 mb-2 p-button-outlined p-button-secondary py-2 px-2",
+                  {
+                    "bg-gray-200 text-gray-800": !isNormalIntensity(),
+                  }
+                )}
+                tooltip={
+                  !isNormalIntensity()
+                    ? "Turnoff wild search"
+                    : "Turnon wild search"
+                }
+                tooltipOptions={{ position: "bottom" }}
+                onClick={() => {
+                  setGlobalSearchThreshold(
+                    isNormalIntensity()
+                      ? FILTER_LEVELS.WILD_SEARCH
+                      : FILTER_LEVELS.NORMAL_SEARCH
+                  );
+                }}>
+                <VscRegex size={20} />
+              </Button>
             </span>
           )}
         </div>
@@ -1095,7 +1104,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onRowReorder && onRowReorder(e);
       }}
       onFilter={onFilter}
-      onSort={onSort}>
+      onSort={onSort}
+      multiSortMeta={multiSortMeta}
+      rowGroupHeaderTemplate={rowGroupHeaderTemplate}>
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
         <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
       )}
