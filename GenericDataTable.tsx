@@ -844,18 +844,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             />
           </div>
         )}
-        {onClickReadingReceipt && (
-          <Button
-            type="button"
-            tooltip="Reading receipt"
-            tooltipOptions={tooltipOptions}
-            className="p-button-outlined p-button-secondary m-2"
-            onClick={() =>
-              onClickReadingReceipt(filteredData.map((item) => item.id))
-            }>
-            <BsReceiptCutoff className="text-xl" />
-          </Button>
-        )}
+
         {clearFilterButton !== false && (
           <Button
             type="button"
@@ -885,6 +874,18 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               tooltipOptions={tooltipOptions}
             />
           </>
+        )}
+        {onClickReadingReceipt && (
+          <Button
+            type="button"
+            tooltip="Reading receipt"
+            icon={<BsReceiptCutoff />}
+            tooltipOptions={tooltipOptions}
+            className="p-button-outlined p-button-secondary m-2"
+            onClick={() =>
+              onClickReadingReceipt(filteredData.map((item) => item.id))
+            }
+          />
         )}
 
         <div className="m-2">
