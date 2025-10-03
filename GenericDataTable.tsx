@@ -105,6 +105,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     leftCornerDataPrint,
     companyLogoBase64,
     tableName,
+    tableHeaderBackgroundColor,
   } = printPdf || {};
 
   if (setCustomFilter) {
@@ -370,7 +371,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const addMetaData = (
     doc: any,
     tableName: string,
-    i: number,
+    pageNumber: number,
     pageCount: number,
     img: HTMLImageElement | null,
     imgWidth: number,
@@ -407,9 +408,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       addCompanyLogoToDocument(doc, img, imgWidth, imgHeight);
     }
     doc.setFontSize(10);
-    doc.setPage(i);
+    doc.setPage(pageNumber);
     const str = `${t("components.genericDataTable.pages", {
-      page: String(i),
+      page: String(pageNumber),
       pages: String(pageCount),
     })}`;
     doc.text(str, 280, top, {
@@ -459,8 +460,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       import("jspdf-autotable").then(async () => {
         const doc = new jsPDF.default("l", "mm", "a4");
         const img = new Image();
-        let imgWidth: number;
-        let imgHeight: number;
+        let imgWidth: number = 0;
+        let imgHeight: number = 0;
         if (logo) {
           img.src = logo;
         }
@@ -468,8 +469,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           if (logo) {
             img.onload = () => {
               const dimensions: any = imageDimensions(img);
-              imgWidth = dimensions.scaledWidth;
-              imgHeight = dimensions.scaledHeight;
+              imgWidth = dimensions?.scaledWidth ?? 0;
+              imgHeight = dimensions?.scaledHeight ?? 0;
               resolve(dimensions);
             };
           } else {
@@ -484,24 +485,29 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           doc.text(filterValue, 15, marginTop);
           marginTop += 5;
         }
+
         autoTable(doc, {
           head: [parsedColumns?.map((col: any) => col?.title)],
           body: data,
-          didDrawCell: () => {},
           margin: { top: marginTop },
-          didDrawPage: (data) => {
-            top = 15;
-            addMetaData(
-              doc,
-              headerText ?? "",
-              data.pageNumber,
-              (doc as any).internal.getNumberOfPages(),
-              logo ? img : null,
-              imgWidth as number,
-              imgHeight as number
-            );
-          },
+          headStyles: { fillColor: tableHeaderBackgroundColor || "#2980b9" },
         });
+
+        // ✅ Now total pages are known
+        const totalPages = doc.getNumberOfPages();
+
+        for (let page = 1; page <= totalPages; page++) {
+          top = 15;
+          addMetaData(
+            doc,
+            headerText ?? "",
+            page, // current page
+            totalPages, // total pages
+            logo ? img : null,
+            imgWidth,
+            imgHeight
+          );
+        }
 
         doc.save(`${tableName ?? "dataTable"}.pdf`);
       });
@@ -875,6 +881,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             />
           </>
         )}
+
         {onClickReadingReceipt && (
           <Button
             type="button"
@@ -887,7 +894,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             }
           />
         )}
-
         <div className="m-2">
           {" "}
           {openNew && <AppButton type="Add" onClick={openNew} />}

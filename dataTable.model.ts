@@ -38,6 +38,7 @@ export interface IGenericDataTableProps {
     currentUser?: any;
     printedDate?: string;
     tableName?: string;
+    tableHeaderBackgroundColor?: string;
   };
   paginator?: boolean;
   paginatorTemplate?: string;
