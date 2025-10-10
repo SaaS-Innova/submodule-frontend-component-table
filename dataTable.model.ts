@@ -2,6 +2,7 @@ import { FilterMatchMode } from "primereact/api";
 import {
   ColumnBodyOptions,
   ColumnFilterElementTemplateOptions,
+  ColumnEvent,
 } from "primereact/column";
 import {
   DataTablePageEvent,
@@ -123,6 +124,7 @@ export interface IColumn {
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
+  onCellEditComplete?: (e: ColumnEvent) => void;
 }
 
 export interface IColumnSort {
