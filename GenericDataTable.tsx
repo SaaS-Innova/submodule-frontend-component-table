@@ -97,6 +97,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     transformPrimeNgFilterObjectToArray,
     onClickReadingReceipt,
     rowGroupHeaderTemplate,
+    paginatorPosition,
+    paginatorRight,
+    paginatorLeft,
+    paginatorLeftTemplate,
+    paginatorRightTemplate,
   } = props;
 
   const {
@@ -241,7 +246,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
           maxConstraints={col.maxConstraints}
-          onCellEditComplete={col?.onCellEditComplete}
         />
       ));
       return dynamicColumn;
@@ -1043,6 +1047,24 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       </div>
     </div>
   );
+
+  const finalValues =
+    dataLoading && isColumnDefined
+      ? initialValue
+      : totalCount
+      ? value
+      : customGlobalFilter(value, globalFilterValue);
+
+  const totalRecordCount = !totalCount ? finalValues?.length : totalCount;
+
+  const renderPaginatorContent = (
+    enabled: boolean | undefined,
+    template: React.ReactNode,
+    fallback: React.ReactNode = null
+  ) => {
+    if (!enabled) return null;
+    return template ?? fallback;
+  };
   return (
     <DataTable
       className={`${classNames}`}
@@ -1051,18 +1073,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       stripedRows
       size="small"
       ref={dt}
-      value={
-        dataLoading && isColumnDefined
-          ? initialValue
-          : totalCount
-          ? value
-          : customGlobalFilter(value, globalFilterValue)
-      }
+      value={finalValues}
       first={page && rows ? page * rows : 0}
       header={displayHeaderSection !== false && header}
       rows={rows ?? 30}
-      totalRecords={totalCount ?? undefined}
-      lazy={totalCount ? true : false}
+      totalRecords={totalRecordCount ?? undefined}
+      lazy={totalRecordCount ? true : false}
       onPage={onPageChange}
       dataKey={dataKey ?? "id"}
       rowHover={rowHover}
@@ -1081,11 +1097,22 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       rowGroupMode={rowGroupMode}
       groupRowsBy={groupRowsBy}
       sortMode={sortMode ?? "single"}
+      paginatorRight={renderPaginatorContent(
+        paginatorRight,
+        paginatorRightTemplate,
+        <div>Total records : {totalRecordCount}</div>
+      )}
+      paginatorLeft={renderPaginatorContent(
+        paginatorLeft,
+        paginatorLeftTemplate,
+        <div />
+      )}
       sortField={selectedSortData.field}
       sortOrder={selectedSortData.order}
       breakpoint={responsiveLayout}
       expandableRowGroups={expandableRowGroups}
       isDataSelectable={isRowSelectable}
+      paginatorPosition={paginatorPosition || "bottom"}
       expandedRows={expandedRows || rowsExpanded}
       onRowToggle={
         onRowToggle ||

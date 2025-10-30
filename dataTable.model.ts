@@ -2,8 +2,8 @@ import { FilterMatchMode } from "primereact/api";
 import {
   ColumnBodyOptions,
   ColumnFilterElementTemplateOptions,
-  ColumnEvent,
 } from "primereact/column";
+
 import {
   DataTablePageEvent,
   DataTableRowClassNameOptions,
@@ -99,6 +99,11 @@ export interface IGenericDataTableProps {
   transformPrimeNgFilterObjectToArray?: (filters: any) => any[];
   onClickReadingReceipt?: (data: any) => void;
   rowGroupHeaderTemplate?: (data: any) => React.ReactNode;
+  paginatorPosition?: "top" | "bottom" | "both";
+  paginatorRight?: boolean;
+  paginatorLeft?: boolean;
+  paginatorRightTemplate?: React.ReactNode;
+  paginatorLeftTemplate?: React.ReactNode;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
@@ -124,7 +129,6 @@ export interface IColumn {
   filterElement?:
     | React.ReactNode
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
-  onCellEditComplete?: (e: ColumnEvent) => void;
 }
 
 export interface IColumnSort {
