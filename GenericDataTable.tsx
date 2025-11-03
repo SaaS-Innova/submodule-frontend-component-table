@@ -1055,7 +1055,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       ? value
       : customGlobalFilter(value, globalFilterValue);
 
-  const totalRecordCount = !totalCount ? finalValues?.length : totalCount;
+  const totalRecordCount = !totalCount ? filteredData?.length : totalCount;
 
   const renderPaginatorContent = (
     enabled: boolean | undefined,
@@ -1078,7 +1078,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       header={displayHeaderSection !== false && header}
       rows={rows ?? 30}
       totalRecords={totalRecordCount ?? undefined}
-      lazy={totalCount ? true : false} //If we provide totalRecordCount , then pagination and sort not working so need to look into it
+      lazy={totalCount ? true : false} //TODO : If we provide totalRecordCount , then pagination and sort not working so need to look into it
       onPage={onPageChange}
       dataKey={dataKey ?? "id"}
       rowHover={rowHover}
