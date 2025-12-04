@@ -11,23 +11,25 @@ import {
 import { FilterMatchMode, FilterOperator, FilterService } from "primereact/api";
 import autoTable from "jspdf-autotable";
 import AppButton from "../button/AppButton";
-import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
+import { MultiSelectChangeEvent } from "primereact/multiselect";
 import { AutoComplete } from "primereact/autocomplete";
 import { Skeleton } from "primereact/skeleton";
 import _ from "lodash";
 import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
-import { VscRegex } from "react-icons/vsc";
 import { classNames as conditionClassNames } from "primereact/utils";
 import noResultFoundImage from "./no-result-found.png";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { capitalizeFirstLetter } from "../../../library/utilities/helperFunction";
+import { ColumnsIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
 };
 import { BsReceiptCutoff } from "react-icons/bs";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { InputSwitch } from "primereact/inputswitch";
 const SORT_MODE_MULTIPLE = "multiple";
 
 const GenericDataTable = (props: IGenericDataTableProps) => {
@@ -43,9 +45,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     displayHeaderSection,
     dataLoading,
     dataKey,
-    exportButtons,
+    exportButtons = false,
     globalSearchOption,
-    clearFilterButton,
+    clearFilterButton = false,
     globalFilterFields,
     rowHover,
     rows,
@@ -98,10 +100,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     onClickReadingReceipt,
     rowGroupHeaderTemplate,
     paginatorPosition,
-    paginatorRight,
-    paginatorLeft,
-    paginatorLeftTemplate,
-    paginatorRightTemplate,
+    onClickFilter,
+    showFilterButton,
   } = props;
 
   const {
@@ -134,11 +134,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     },
   });
   const dt = useRef<any>(null);
+  const manageColumnsPanelRef = useRef<OverlayPanel | null>(null);
   const [rowsExpanded, setRowsExpanded] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [suggestionsList, setSuggestionsList] = useState<any>(null);
   const [visibleColumns, setVisibleColumns] = useState<IColumn[]>([]);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const [isManageColumnsOpen, setIsManageColumnsOpen] = useState(false);
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
     FILTER_LEVELS.NORMAL_SEARCH
   );
@@ -148,6 +150,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   });
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [multiSortMeta, setMultiSortMeta] = useState<IColumnSort[]>([]);
+  const [first, setFirst] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(rows ?? 30);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+  useEffect(() => {
+    if (rows !== undefined && rows !== null) {
+      setRowsPerPage(rows);
+    }
+  }, [rows]);
+
+  useEffect(() => {
+    if (page !== undefined && page !== null && rowsPerPage) {
+      setFirst(page * rowsPerPage);
+    }
+  }, [page, rowsPerPage]);
 
   const setDataTableValueBouncing = useRef<any>(
     _.debounce((componentName, columns) => {
@@ -246,12 +262,24 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
           maxConstraints={col.maxConstraints}
+          headerClassName={
+            selectedSortData.field === col.field
+              ? "text-red-600 font-semibold"
+              : ""
+          }
+          pt={{
+            sortIcon: {
+              className: `${
+                col.field === selectedSortData.field ? "text-red-600" : ""
+              }`,
+            },
+          }}
         />
       ));
       return dynamicColumn;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleColumns]);
+  }, [visibleColumns, selectedSortData, dataLoading]);
 
   const isColumnDefined = !!(dynamicColumns && dynamicColumns.length > 0);
 
@@ -608,10 +636,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const onColumnToggle = (event: MultiSelectChangeEvent) => {
     const selectedColumns = event.value;
+
     let orderedSelectedColumns = columns.filter((col) =>
       selectedColumns.some((sCol: any) => sCol.field === col.field)
     );
-
     setVisibleColumns(orderedSelectedColumns);
 
     if (
@@ -801,14 +829,39 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       ]);
     }
   };
+  const handleColumnSwitchToggle = (column: IColumn, isVisible: boolean) => {
+    let selectedColumns: IColumn[];
 
+    if (isVisible) {
+      // hide this column
+      selectedColumns = visibleColumns.filter((c) => c.field !== column.field);
+    } else {
+      // show this column; keep original order from `columns`
+      const visibleSet = new Set(visibleColumns.map((c) => c.field));
+      visibleSet.add(column.field);
+
+      selectedColumns = columns.filter((c) => visibleSet.has(c.field));
+    }
+
+    if (!selectedColumns.length) return;
+
+    onColumnToggle({
+      value: selectedColumns,
+    } as unknown as MultiSelectChangeEvent);
+  };
+
+  const totalRecordCount = !totalCount ? filteredData?.length : totalCount;
   const header = (
-    <div className="flex flex-row flex-wrap justify-content-between">
+    <div className="flex flex-row flex-wrap align-items-center justify-content-between px-3 py-2">
+      {/* LEFT: TITLE + COUNT PILL */}
       {headerText !== undefined && (
-        <div className="flex align-items-center justify-content-center font-bold m-2">
-          <span className="capitalize-first">{headerText}</span>
+        <div className="flex align-items-center gap-2 mb-2 md:mb-0">
+          <span className="font-bold text-lg capitalize-first">
+            {headerText}
+          </span>
         </div>
       )}
+
       <div className="flex justify-content-between">
         {headerDropdown && handleDropdownChange && (
           <AutoComplete
@@ -835,44 +888,30 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           />
         )}
       </div>
-      <div className="flex flex-wrap ">
-        {componentNameForSelectingColumns && filterService && (
-          <div>
-            <MultiSelect
-              className="w-3rem m-2 border-gray-600 font-semibold bg-gray-100"
-              selectedItemsLabel="select"
-              value={visibleColumns}
-              options={columns.filter((col) => col.hidden !== true)}
-              optionLabel="header"
-              onChange={(e) => onColumnToggle(e)}
-              dropdownIcon={() => {
-                return (
-                  <i className="pi pi-bars text-gray-800 bg-gray-100 "></i>
-                );
-              }}
-              tooltip="Show/Hide columns"
-              tooltipOptions={tooltipOptions}
-            />
-          </div>
-        )}
+      {/* RIGHT: ACTIONS + SEARCH */}
+      <div className="flex flex-wrap align-items-center justify-content-end gap-2">
+        {/* MANAGE COLUMNS (Figma-style red button + overlay with switches) */}
 
+        {/* CLEAR FILTER */}
         {clearFilterButton !== false && (
           <Button
             type="button"
             icon="pi pi-filter-slash"
-            tooltip="clear filter"
+            tooltip="Clear filter"
             tooltipOptions={tooltipOptions}
-            className="p-button-outlined p-button-secondary m-2"
+            className="p-button-outlined p-button-secondary"
             onClick={clearFilter}
           />
         )}
+
+        {/* EXPORT BUTTONS */}
         {exportButtons !== false && (
           <>
             <Button
               type="button"
               icon="pi pi-file-excel"
               onClick={exportExcel}
-              className="m-2 p-button-outlined p-button-secondary"
+              className="p-button-outlined p-button-secondary"
               tooltip="XLS"
               tooltipOptions={tooltipOptions}
             />
@@ -880,75 +919,202 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               type="button"
               icon="pi pi-file-pdf"
               onClick={() => exportPdf(filteredData)}
-              className="m-2 p-button-outlined p-button-secondary"
+              className="p-button-outlined p-button-secondary"
               tooltip="PDF"
               tooltipOptions={tooltipOptions}
             />
           </>
         )}
 
+        {/* READING RECEIPT (only if passed) */}
         {onClickReadingReceipt && (
           <Button
             type="button"
             tooltip="Reading receipt"
             icon={<BsReceiptCutoff />}
             tooltipOptions={tooltipOptions}
-            className="p-button-outlined p-button-secondary m-2"
+            className="p-button-outlined p-button-secondary"
             onClick={() =>
               onClickReadingReceipt(filteredData.map((item) => item.id))
             }
           />
         )}
-        <div className="m-2">
-          {" "}
-          {openNew && <AppButton type="Add" onClick={openNew} />}
-        </div>
 
-        <div className="flex">
-          {globalSearchOption !== false && (
-            <span className="md:mt-0 p-input-icon-left text-center">
-              <i className="pi pi-search ml-2" />
-              <InputText
-                onChange={(e) => {
-                  setGlobalFilterValue(e.target.value);
-                  if (debounceTimeoutRef.current) {
-                    clearTimeout(debounceTimeoutRef.current);
-                  }
-                  debounceTimeoutRef.current = setTimeout(() => {
-                    handleGlobalSearch(e.target.value);
-                  }, 1000);
-                  setFilteredData(customGlobalFilter(value, e.target.value));
-                }}
-                className="w-full md:w-20rem m-2 pr-6"
-                placeholder={`${t("components.genericDataTable.placeholder")}`}
-                value={globalFilterValue}
-              />
-              <Button
-                type="button"
+        {/* ADD BUTTON (plus icon) */}
+        {openNew && (
+          <div>
+            <AppButton type="Add" onClick={openNew} />
+          </div>
+        )}
+
+        {/* SEARCH BOX (matches Figma layout you showed) */}
+        {globalSearchOption !== false && (
+          <div className="w-full md:w-28rem">
+            <div className="flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300">
+              <span className="p-input-icon-left flex-1 ">
+                <i className="pi pi-search text-sm md:text-base" />
+                <InputText
+                  value={globalFilterValue}
+                  placeholder={t("components.genericDataTable.placeholder")}
+                  className="p-inputtext-md md:p-inputtext-lg w-full border-none shadow-none text-lg"
+                  onChange={(e) => {
+                    setGlobalFilterValue(e.target.value);
+
+                    if (debounceTimeoutRef.current) {
+                      clearTimeout(debounceTimeoutRef.current);
+                    }
+                    debounceTimeoutRef.current = setTimeout(() => {
+                      handleGlobalSearch(e.target.value);
+                    }, 1000);
+
+                    setFilteredData(customGlobalFilter(value, e.target.value));
+                  }}
+                />
+              </span>
+
+              {/* RIGHT: SQUARE ASTERISK BOX */}
+              <div
                 className={conditionClassNames(
-                  "-ml-6 mb-2 p-button-outlined p-button-secondary py-2 px-2",
+                  "flex align-items-center justify-content-center m-1 border-round-lg mr-2",
                   {
-                    "bg-gray-200 text-gray-800": !isNormalIntensity(),
+                    "border-1 border-gray-300": isNormalIntensity(), // light border when OFF
                   }
                 )}
-                tooltip={
-                  !isNormalIntensity()
-                    ? "Turnoff wild search"
-                    : "Turnon wild search"
+                style={{ height: "100%" }}
+              >
+                <Button
+                  type="button"
+                  icon="pi pi-asterisk"
+                  className={conditionClassNames("p-button-sm", {
+                    // normal mode: subtle, text-style
+                    "p-button-text border-none shadow-none text-sm":
+                      isNormalIntensity(),
+                    // wild search ON: solid danger button (red square)
+                    "p-button-danger": !isNormalIntensity(),
+                  })}
+                  style={{
+                    padding: "6px",
+                  }}
+                  tooltip={
+                    !isNormalIntensity()
+                      ? `Wildcard search OFF
+                    Matches partial keywords (e.g., "Joh" → "Johnson")`
+                      : `Wildcard search ON 
+                    Matches partial keywords (e.g., "Joh" → "Johnson")`
+                  }
+                  tooltipOptions={{ position: "bottom" }}
+                  onClick={() => {
+                    setGlobalSearchThreshold(
+                      isNormalIntensity()
+                        ? FILTER_LEVELS.WILD_SEARCH
+                        : FILTER_LEVELS.NORMAL_SEARCH
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {componentNameForSelectingColumns && filterService && (
+          <>
+            {/* Figma-style red Manage Columns button */}
+            <Button
+              type="button"
+              label="Manage Columns"
+              icon={<ColumnsIcon size={16} weight="bold" />}
+              iconPos="left"
+              className={conditionClassNames(
+                "p-button-lg text-base border-round-lg py-2",
+                {
+                  "p-button-outlined": !isManageColumnsOpen,
                 }
-                tooltipOptions={{ position: "bottom" }}
-                onClick={() => {
-                  setGlobalSearchThreshold(
-                    isNormalIntensity()
-                      ? FILTER_LEVELS.WILD_SEARCH
-                      : FILTER_LEVELS.NORMAL_SEARCH
-                  );
-                }}>
-                <VscRegex size={20} />
-              </Button>
-            </span>
-          )}
-        </div>
+              )}
+              onClick={(e) => {
+                manageColumnsPanelRef.current?.toggle(e);
+                setIsManageColumnsOpen(true);
+              }}
+            />
+
+            {/* Overlay with switches, but using MultiSelect logic under the hood */}
+            <OverlayPanel
+              ref={manageColumnsPanelRef}
+              dismissable
+              onHide={() => setIsManageColumnsOpen(false)}
+            >
+              <div className="p-divider p-component p-divider-horizontal mb-1" />
+
+              <div
+                className="flex flex-column gap-2"
+                style={{
+                  minWidth: "220px",
+                  maxHeight: "260px",
+                  overflowY: "auto",
+                  paddingRight: "0.5rem",
+                }}
+              >
+                {columns
+                  .filter((col) => col.hidden !== true)
+                  .map((col) => {
+                    const isVisible = visibleColumns.some(
+                      (vc) => vc.field === col.field
+                    );
+                    return (
+                      <div
+                        key={col.field}
+                        className="
+                      px-1            
+                      py-1
+                      flex
+                      align-items-start
+                      justify-content-between
+                      border-round
+                      cursor-pointer
+                      transition-colors
+                      surface-overlay
+                      hover:surface-hover
+                    "
+                      >
+                        {/* label can wrap */}
+                        <span
+                          className="white-space-normal mr-1"
+                          style={{ flex: 1 }}
+                        >
+                          {col.header}
+                        </span>
+
+                        <InputSwitch
+                          checked={isVisible}
+                          onChange={() =>
+                            handleColumnSwitchToggle(col, isVisible)
+                          }
+                          style={{
+                            height: "20px",
+                            width: "40px",
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+            </OverlayPanel>
+            {(showFilterButton ?? true) && onClickFilter && (
+              <Button
+                type="button"
+                label="Filter"
+                icon={<SlidersHorizontalIcon size={14} weight="bold" />}
+                iconPos="left"
+                className={conditionClassNames(
+                  "p-button-lg text-base border-round-lg py-2",
+                  {
+                    "p-button-outlined": !isManageColumnsOpen,
+                  }
+                )}
+                onClick={onClickFilter}
+              />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -988,6 +1154,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     rowData: any,
     event: React.MouseEvent<HTMLElement, MouseEvent>
   ) => {
+    const keyField = dataKey ?? "id";
+    setSelectedRecordId(rowData[keyField]);
     if (onClickIcon) {
       const withCtrl = event.ctrlKey;
       if (withCtrl) {
@@ -1006,18 +1174,29 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const iconColumnTemplate = (rowData: any) => {
+    const isSelected = rowData?.id === selectedRecordId;
     return (
-      <i
-        className="pi pi-desktop flex justify-content-center hover:surface-200 border-circle w-2rem h-2rem align-items-center"
-        onClick={(event) => {
-          handleClickIcon(rowData, event);
-        }}></i>
+      <Button
+        icon="pi pi-eye"
+        outlined
+        className="p-button-sm"
+        severity={isSelected ? "danger" : "secondary"}
+        style={{
+          width: "2rem",
+          height: "2rem",
+          padding: 0,
+          background: "transparent",
+        }}
+        onClick={(event) => handleClickIcon(rowData, event)}
+      />
     );
   };
+
   const emptyMessageTemplate = () => (
     <div
       className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
-      style={{ color: "#6c757d" }}>
+      style={{ color: "#6c757d" }}
+    >
       <img
         src={noResultFoundImage}
         alt="No Results Found"
@@ -1055,33 +1234,65 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       ? value
       : customGlobalFilter(value, globalFilterValue);
 
-  const totalRecordCount = !totalCount ? filteredData?.length : totalCount;
+  const total = totalCount ?? filteredData?.length ?? 0;
 
-  const renderPaginatorContent = (
-    enabled: boolean | undefined,
-    template: React.ReactNode,
-    fallback: React.ReactNode = null
-  ) => {
-    if (!enabled) return null;
-    return template ?? fallback;
+  const startRecord = total === 0 ? 0 : first + 1;
+  const endRecord = total === 0 ? 0 : Math.min(first + rowsPerPage, total);
+
+  const handlePage = (e: any) => {
+    setFirst(e.first);
+    setRowsPerPage(e.rows);
+
+    if (onPageChange) {
+      onPageChange(e);
+    }
   };
+
   return (
     <DataTable
       className={`${classNames}`}
+      pt={{
+        paginator: {
+          prevPageButton: {
+            style: {
+              border: "1px solid var(--primary-color)",
+              color: "var(--primary-color)",
+            },
+          },
+          nextPageButton: {
+            style: {
+              border: "1px solid var(--primary-color)",
+              color: "var(--primary-color)",
+            },
+          },
+          firstPageButton: {
+            style: {
+              border: "1px solid var(--primary-color)",
+              color: "var(--primary-color)",
+            },
+          },
+          lastPageButton: {
+            style: {
+              border: "1px solid var(--primary-color)",
+              color: "var(--primary-color)",
+            },
+          },
+        },
+      }}
       style={handleRowClickEvent && { cursor: "pointer" }}
       tableStyle={tableStyle}
       stripedRows
       size="small"
       ref={dt}
       value={finalValues}
-      first={page && rows ? page * rows : 0}
+      first={first}
+      rows={rowsPerPage}
       header={displayHeaderSection !== false && header}
-      rows={rows ?? 30}
       totalRecords={totalRecordCount ?? undefined}
       lazy={totalCount ? true : false} //TODO : If we provide totalRecordCount , then pagination and sort not working so need to look into it
-      onPage={onPageChange}
+      onPage={handlePage}
       dataKey={dataKey ?? "id"}
-      rowHover={rowHover}
+      rowHover={rowHover ?? true}
       paginator={paginator ?? !!(value && value.length > 0)}
       currentPageReportTemplate={currentPageReportTemplate}
       globalFilterFields={globalFilterFields}
@@ -1097,16 +1308,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       rowGroupMode={rowGroupMode}
       groupRowsBy={groupRowsBy}
       sortMode={sortMode ?? "single"}
-      paginatorRight={renderPaginatorContent(
-        paginatorRight,
-        paginatorRightTemplate,
-        <div>Total records : {totalRecordCount}</div>
-      )}
-      paginatorLeft={renderPaginatorContent(
-        paginatorLeft,
-        paginatorLeftTemplate,
-        <div />
-      )}
+      paginatorLeft={
+        <span className="text-sm text-gray-600">
+          Showing {startRecord}–{endRecord} of {total} records
+        </span>
+      }
       sortField={selectedSortData.field}
       sortOrder={selectedSortData.order}
       breakpoint={responsiveLayout}
@@ -1141,7 +1347,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       onFilter={onFilter}
       onSort={onSort}
       multiSortMeta={multiSortMeta}
-      rowGroupHeaderTemplate={rowGroupHeaderTemplate}>
+      rowGroupHeaderTemplate={rowGroupHeaderTemplate}
+    >
       {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
         <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
       )}
@@ -1164,7 +1371,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         <Column
           rowEditor
           headerStyle={{ width: "10%", minWidth: "6rem" }}
-          bodyStyle={{ textAlign: "center" }}></Column>
+          bodyStyle={{ textAlign: "center" }}
+        ></Column>
       )}
       {isColumnDefined && actionBodyTemplate && !dataLoading && (
         <Column className="action-column" body={actionBodyTemplate}></Column>

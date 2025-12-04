@@ -100,10 +100,8 @@ export interface IGenericDataTableProps {
   onClickReadingReceipt?: (data: any) => void;
   rowGroupHeaderTemplate?: (data: any) => React.ReactNode;
   paginatorPosition?: "top" | "bottom" | "both";
-  paginatorRight?: boolean;
-  paginatorLeft?: boolean;
-  paginatorRightTemplate?: React.ReactNode;
-  paginatorLeftTemplate?: React.ReactNode;
+  onClickFilter?: () => void;
+  showFilterButton?: boolean;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
