@@ -860,9 +860,28 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <span className="font-bold text-lg capitalize-first">
             {headerText}
           </span>
+
+          {typeof totalRecordCount === "number" && (
+            <span
+              className="
+              inline-flex
+              align-items-center
+              px-2
+              py-1
+              border-round-lg
+              text-xs
+              font-medium
+            "
+              style={{
+                backgroundColor: "var(--primary-color)",
+                color: "var(--primary-color-text)",
+              }}
+            >
+              {totalRecordCount.toLocaleString()} {entityName ?? "records"}
+            </span>
+          )}
         </div>
       )}
-
       <div className="flex justify-content-between">
         {headerDropdown && handleDropdownChange && (
           <AutoComplete
@@ -950,7 +969,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
         {/* SEARCH BOX (matches Figma layout you showed) */}
         {globalSearchOption !== false && (
-          <div className="w-full md:w-28rem">
+          <div className="w-full md:w-26rem">
             <div className="flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300">
               <span className="p-input-icon-left flex-1 ">
                 <i className="pi pi-search text-sm md:text-base" />
@@ -1250,135 +1269,145 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   return (
-    <DataTable
-      className={`${classNames}`}
-      pt={{
-        paginator: {
-          prevPageButton: {
-            style: {
-              border: "1px solid var(--primary-color)",
-              color: "var(--primary-color)",
+    <div className="surface-card border-1 border-gray-300 border-round-2xl p-3">
+      <DataTable
+        className={`${classNames}`}
+        pt={{
+          paginator: {
+            prevPageButton: {
+              style: {
+                border: "1px solid var(--primary-color)",
+                color: "var(--primary-color)",
+              },
+            },
+            nextPageButton: {
+              style: {
+                border: "1px solid var(--primary-color)",
+                color: "var(--primary-color)",
+              },
+            },
+            firstPageButton: {
+              style: {
+                border: "1px solid var(--primary-color)",
+                color: "var(--primary-color)",
+              },
+            },
+            lastPageButton: {
+              style: {
+                border: "1px solid var(--primary-color)",
+                color: "var(--primary-color)",
+              },
             },
           },
-          nextPageButton: {
+          header: {
             style: {
-              border: "1px solid var(--primary-color)",
-              color: "var(--primary-color)",
+              borderBottom: "none",
+              borderTop: "none",
             },
           },
-          firstPageButton: {
-            style: {
-              border: "1px solid var(--primary-color)",
-              color: "var(--primary-color)",
-            },
-          },
-          lastPageButton: {
-            style: {
-              border: "1px solid var(--primary-color)",
-              color: "var(--primary-color)",
-            },
-          },
-        },
-      }}
-      style={handleRowClickEvent && { cursor: "pointer" }}
-      tableStyle={tableStyle}
-      stripedRows
-      size="small"
-      ref={dt}
-      value={finalValues}
-      first={first}
-      rows={rowsPerPage}
-      header={displayHeaderSection !== false && header}
-      totalRecords={totalRecordCount ?? undefined}
-      lazy={totalCount ? true : false} //TODO : If we provide totalRecordCount , then pagination and sort not working so need to look into it
-      onPage={handlePage}
-      dataKey={dataKey ?? "id"}
-      rowHover={rowHover ?? true}
-      paginator={paginator ?? !!(value && value.length > 0)}
-      currentPageReportTemplate={currentPageReportTemplate}
-      globalFilterFields={globalFilterFields}
-      filters={filters}
-      onRowClick={handleRowClickEvent}
-      onRowDoubleClick={onRowDoubleClick}
-      onRowEditInit={onRowEditInit}
-      selectionMode={selectionMode ?? null}
-      selection={selectedRecords}
-      onSelectionChange={handleCheckBoxSelectionEvent}
-      scrollable={scrollable}
-      scrollHeight={scrollHeight}
-      rowGroupMode={rowGroupMode}
-      groupRowsBy={groupRowsBy}
-      sortMode={sortMode ?? "single"}
-      paginatorLeft={
-        <span className="text-sm text-gray-600">
-          Showing {startRecord}–{endRecord} of {total} records
-        </span>
-      }
-      sortField={selectedSortData.field}
-      sortOrder={selectedSortData.order}
-      breakpoint={responsiveLayout}
-      expandableRowGroups={expandableRowGroups}
-      isDataSelectable={isRowSelectable}
-      paginatorPosition={paginatorPosition || "bottom"}
-      expandedRows={expandedRows || rowsExpanded}
-      onRowToggle={
-        onRowToggle ||
-        ((e: any) => {
-          setRowsExpanded(e?.data);
-        })
-      }
-      rowExpansionTemplate={rowExpansionTemplate}
-      editMode={editMode}
-      onRowEditComplete={onRowEditComplete}
-      rowEditValidator={onRowEditValidator}
-      rowClassName={rowClassName}
-      emptyMessage={
-        isColumnDefined && !dataLoading ? emptyMessageTemplate : bodyTemplate
-      }
-      onRowExpand={onRowExpand}
-      onRowCollapse={onRowCollapse}
-      reorderableColumns={reorderableColumns}
-      reorderableRows={reorderableRows}
-      onValueChange={(value) => {
-        setFilteredData(value as any);
-      }}
-      onRowReorder={(e) => {
-        onRowReorder && onRowReorder(e);
-      }}
-      onFilter={onFilter}
-      onSort={onSort}
-      multiSortMeta={multiSortMeta}
-      rowGroupHeaderTemplate={rowGroupHeaderTemplate}
-    >
-      {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
-        <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
-      )}
-      {isColumnDefined && rowExpansionTemplate && !dataLoading && (
-        <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
-      )}
-      {isColumnDefined && !dataLoading && onClickIcon && (
-        <Column
-          body={iconColumnTemplate}
-          className="cursor-pointer"
-          style={{ width: "2rem" }}
-        />
-      )}
-      {isColumnDefined &&
-        reorderableColumns &&
-        reorderableRows &&
-        !dataLoading && <Column rowReorder style={{ width: "3rem" }}></Column>}
-      {isColumnDefined && dynamicColumns}
-      {isColumnDefined && editMode && !dataLoading && (
-        <Column
-          rowEditor
-          headerStyle={{ width: "10%", minWidth: "6rem" }}
-          bodyStyle={{ textAlign: "center" }}
-        ></Column>
-      )}
-      {isColumnDefined && actionBodyTemplate && !dataLoading && (
-        <Column className="action-column" body={actionBodyTemplate}></Column>
-      )}
-    </DataTable>
+        }}
+        style={handleRowClickEvent && { cursor: "pointer" }}
+        tableStyle={tableStyle}
+        stripedRows
+        size="small"
+        ref={dt}
+        value={finalValues}
+        first={first}
+        rows={rowsPerPage}
+        header={displayHeaderSection !== false && header}
+        totalRecords={totalRecordCount ?? undefined}
+        lazy={totalCount ? true : false} //TODO : If we provide totalRecordCount , then pagination and sort not working so need to look into it
+        onPage={handlePage}
+        dataKey={dataKey ?? "id"}
+        rowHover={rowHover ?? true}
+        paginator={paginator ?? !!(value && value.length > 0)}
+        currentPageReportTemplate={currentPageReportTemplate}
+        globalFilterFields={globalFilterFields}
+        filters={filters}
+        onRowClick={handleRowClickEvent}
+        onRowDoubleClick={onRowDoubleClick}
+        onRowEditInit={onRowEditInit}
+        selectionMode={selectionMode ?? null}
+        selection={selectedRecords}
+        onSelectionChange={handleCheckBoxSelectionEvent}
+        scrollable={scrollable}
+        scrollHeight={scrollHeight}
+        rowGroupMode={rowGroupMode}
+        groupRowsBy={groupRowsBy}
+        sortMode={sortMode ?? "single"}
+        paginatorLeft={
+          <span className="text-sm text-gray-600">
+            Showing {startRecord}–{endRecord} of {total} records
+          </span>
+        }
+        sortField={selectedSortData.field}
+        sortOrder={selectedSortData.order}
+        breakpoint={responsiveLayout}
+        expandableRowGroups={expandableRowGroups}
+        isDataSelectable={isRowSelectable}
+        paginatorPosition={paginatorPosition || "bottom"}
+        expandedRows={expandedRows || rowsExpanded}
+        onRowToggle={
+          onRowToggle ||
+          ((e: any) => {
+            setRowsExpanded(e?.data);
+          })
+        }
+        rowExpansionTemplate={rowExpansionTemplate}
+        editMode={editMode}
+        onRowEditComplete={onRowEditComplete}
+        rowEditValidator={onRowEditValidator}
+        rowClassName={rowClassName}
+        emptyMessage={
+          isColumnDefined && !dataLoading ? emptyMessageTemplate : bodyTemplate
+        }
+        onRowExpand={onRowExpand}
+        onRowCollapse={onRowCollapse}
+        reorderableColumns={reorderableColumns}
+        reorderableRows={reorderableRows}
+        onValueChange={(value) => {
+          setFilteredData(value as any);
+        }}
+        onRowReorder={(e) => {
+          onRowReorder && onRowReorder(e);
+        }}
+        onFilter={onFilter}
+        onSort={onSort}
+        multiSortMeta={multiSortMeta}
+        rowGroupHeaderTemplate={rowGroupHeaderTemplate}
+      >
+        {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
+          <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
+        )}
+        {isColumnDefined && rowExpansionTemplate && !dataLoading && (
+          <Column expander={rowExpansion || true} style={{ width: "2.5rem" }} />
+        )}
+        {isColumnDefined && !dataLoading && onClickIcon && (
+          <Column
+            body={iconColumnTemplate}
+            className="cursor-pointer"
+            style={{ width: "2rem" }}
+          />
+        )}
+        {isColumnDefined &&
+          reorderableColumns &&
+          reorderableRows &&
+          !dataLoading && (
+            <Column rowReorder style={{ width: "3rem" }}></Column>
+          )}
+        {isColumnDefined && dynamicColumns}
+        {isColumnDefined && editMode && !dataLoading && (
+          <Column
+            rowEditor
+            headerStyle={{ width: "10%", minWidth: "6rem" }}
+            bodyStyle={{ textAlign: "center" }}
+          ></Column>
+        )}
+        {isColumnDefined && actionBodyTemplate && !dataLoading && (
+          <Column className="action-column" body={actionBodyTemplate}></Column>
+        )}
+      </DataTable>
+    </div>
   );
 };
 
