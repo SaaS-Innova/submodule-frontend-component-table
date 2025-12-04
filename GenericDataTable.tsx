@@ -262,6 +262,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           filterMatchMode={col?.filterMatchMode}
           showFilterMatchModes={col.showFilterMatchModes}
           maxConstraints={col.maxConstraints}
+          onCellEditComplete={col?.onCellEditComplete}
           headerClassName={
             selectedSortData.field === col.field
               ? "text-red-600 font-semibold"
