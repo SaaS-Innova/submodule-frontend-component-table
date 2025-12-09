@@ -244,39 +244,38 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const dynamicColumns = useMemo(() => {
     if (visibleColumns) {
-      const dynamicColumn = visibleColumns?.map((col) => (
-        <Column
-          key={col.field}
-          className={`${col.className} `}
-          selectionMode={col?.selectionMode}
-          style={col.style}
-          field={col.field}
-          header={col.header}
-          sortable={col.sortable !== false}
-          filter={col.filter !== false}
-          filterField={col.field}
-          body={dataLoading ? bodyTemplate : col.template}
-          editor={col.editor}
-          hidden={col.hidden}
-          filterElement={col?.filterElement}
-          filterMatchMode={col?.filterMatchMode}
-          showFilterMatchModes={col.showFilterMatchModes}
-          maxConstraints={col.maxConstraints}
-          onCellEditComplete={col?.onCellEditComplete}
-          headerClassName={
-            selectedSortData.field === col.field
-              ? "text-red-600 font-semibold"
-              : ""
-          }
-          pt={{
-            sortIcon: {
-              className: `${
-                col.field === selectedSortData.field ? "text-red-600" : ""
-              }`,
-            },
-          }}
-        />
-      ));
+      const dynamicColumn = visibleColumns?.map((col) => {
+        const isActiveSort = selectedSortData.field === col.field;
+        return (
+          <Column
+            key={col.field}
+            className={`${col.className} `}
+            selectionMode={col?.selectionMode}
+            style={col.style}
+            field={col.field}
+            header={col.header}
+            sortable={col.sortable !== false}
+            filter={col.filter !== false}
+            filterField={col.field}
+            body={dataLoading ? bodyTemplate : col.template}
+            editor={col.editor}
+            hidden={col.hidden}
+            filterElement={col?.filterElement}
+            filterMatchMode={col?.filterMatchMode}
+            showFilterMatchModes={col.showFilterMatchModes}
+            maxConstraints={col.maxConstraints}
+            onCellEditComplete={col?.onCellEditComplete}
+            headerStyle={
+              isActiveSort ? { color: "#EC1241", fontWeight: 600 } : {}
+            }
+            pt={{
+              sortIcon: {
+                style: isActiveSort ? { color: "#EC1241" } : {},
+              },
+            }}
+          />
+        );
+      });
       return dynamicColumn;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1203,9 +1202,16 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         severity={isSelected ? "danger" : "secondary"}
         style={{
           width: "2rem",
-          height: "2rem",
-          padding: 0,
-          background: "transparent",
+          height: "2.1rem",
+          padding: "0rem",
+          backgroundColor: isSelected
+            ? "color-mix(in srgb, var(--primary-color) 15%, transparent)"
+            : "transparent",
+        }}
+        pt={{
+          icon: {
+            style: { fontSize: "1.2rem" },
+          },
         }}
         onClick={(event) => handleClickIcon(rowData, event)}
       />
