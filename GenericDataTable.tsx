@@ -968,8 +968,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
         {/* SEARCH BOX (matches Figma layout you showed) */}
         {globalSearchOption !== false && (
-          <div className="w-full md:w-26rem">
-            <div className="flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300">
+          <div className="w-full lg:max-w-26rem lg:w-auto md:w-auto sm:w-auto mt-2 md:mt-0 md:ml-2">
+            <div className="flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2">
               <span className="p-input-icon-left flex-1 ">
                 <i className="pi pi-search text-sm md:text-base" />
                 <InputText
@@ -1013,6 +1013,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   })}
                   style={{
                     padding: "6px",
+                    fontSize: "12px",
+                    height: "24px",
+                    width: "24px",
                   }}
                   tooltip={
                     !isNormalIntensity()
@@ -1060,6 +1063,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               ref={manageColumnsPanelRef}
               dismissable
               onHide={() => setIsManageColumnsOpen(false)}
+              style={{
+                borderRadius: "8px",
+              }}
             >
               <div className="p-divider p-component p-divider-horizontal mb-1" />
 
@@ -1067,7 +1073,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 className="flex flex-column gap-2"
                 style={{
                   minWidth: "220px",
-                  maxHeight: "260px",
+                  maxHeight: "440px",
                   overflowY: "auto",
                   paddingRight: "0.5rem",
                 }}
@@ -1201,8 +1207,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         className="p-button-sm"
         severity={isSelected ? "danger" : "secondary"}
         style={{
-          width: "2rem",
-          height: "2.1rem",
+          width: "24px",
+          height: "24px",
           padding: "0rem",
           backgroundColor: isSelected
             ? "color-mix(in srgb, var(--primary-color) 15%, transparent)"
@@ -1210,7 +1216,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         }}
         pt={{
           icon: {
-            style: { fontSize: "1.2rem" },
+            style: { fontSize: "15px" },
           },
         }}
         onClick={(event) => handleClickIcon(rowData, event)}
@@ -1275,11 +1281,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   return (
-    <div className="surface-card border-1 border-gray-300 border-round-2xl p-3">
+    <div
+      className="surface-card border-1 border-gray-300 border-round-2xl"
+      style={{
+        padding: "3px",
+        borderRadius: "12px",
+        overflow: "hidden",
+      }}
+    >
       <DataTable
         className={`${classNames}`}
         pt={{
           paginator: {
+            root: {
+              style: {
+                borderBottom: "none",
+              },
+            },
             prevPageButton: {
               style: {
                 border: "1px solid var(--primary-color)",
@@ -1309,6 +1327,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             style: {
               borderBottom: "none",
               borderTop: "none",
+              borderRadius: "12px 12px 0 0",
             },
           },
         }}
@@ -1393,6 +1412,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             body={iconColumnTemplate}
             className="cursor-pointer"
             style={{ width: "2rem" }}
+            pt={{
+              bodyCell: { style: { paddingRight: "0.75rem" } },
+              headerCell: { style: { paddingRight: "0.75rem" } },
+            }}
           />
         )}
         {isColumnDefined &&
