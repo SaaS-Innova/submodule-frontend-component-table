@@ -99,6 +99,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     transformPrimeNgFilterObjectToArray,
     onClickReadingReceipt,
     rowGroupHeaderTemplate,
+    rowGroupFooterTemplate,
     paginatorPosition,
     onClickFilter,
     showFilterButton,
@@ -1400,6 +1401,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onSort={onSort}
         multiSortMeta={multiSortMeta}
         rowGroupHeaderTemplate={rowGroupHeaderTemplate}
+        rowGroupFooterTemplate={rowGroupFooterTemplate}
       >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />

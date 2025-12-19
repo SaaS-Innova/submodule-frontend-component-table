@@ -100,6 +100,7 @@ export interface IGenericDataTableProps {
   transformPrimeNgFilterObjectToArray?: (filters: any) => any[];
   onClickReadingReceipt?: (data: any) => void;
   rowGroupHeaderTemplate?: (data: any) => React.ReactNode;
+  rowGroupFooterTemplate?: (data: any) => React.ReactNode;
   paginatorPosition?: "top" | "bottom" | "both";
   onClickFilter?: () => void;
   showFilterButton?: boolean;
