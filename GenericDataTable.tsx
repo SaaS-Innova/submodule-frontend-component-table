@@ -1051,12 +1051,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               label="Manage Columns"
               icon={<ColumnsIcon size={16} weight="bold" />}
               iconPos="left"
-              className={conditionClassNames(
-                "p-button-lg text-base border-round-lg py-2",
-                {
-                  "p-button-outlined": !isManageColumnsOpen,
-                }
-              )}
+              className={conditionClassNames("p-button-lg text-base py-2", {
+                "p-button-outlined": !isManageColumnsOpen,
+              })}
               onClick={(e) => {
                 manageColumnsPanelRef.current?.toggle(e);
                 setIsManageColumnsOpen(true);
