@@ -103,6 +103,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     paginatorPosition,
     onClickFilter,
     showFilterButton,
+    customClassNameForSearchField,
   } = props;
 
   const {
@@ -931,7 +932,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       {/* RIGHT: ACTIONS + SEARCH */}
       <div className="flex flex-wrap align-items-center justify-content-end gap-2">
         {/* MANAGE COLUMNS (Figma-style red button + overlay with switches) */}
-
         {/* CLEAR FILTER */}
         {clearFilterButton !== false && (
           <Button
@@ -943,7 +943,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             onClick={clearFilter}
           />
         )}
-
         {/* EXPORT BUTTONS */}
         {exportButtons !== false && (
           <>
@@ -965,7 +964,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             />
           </>
         )}
-
         {/* READING RECEIPT (only if passed) */}
         {onClickReadingReceipt && (
           <Button
@@ -979,18 +977,18 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             }
           />
         )}
-
         {/* ADD BUTTON (plus icon) */}
         {openNew && (
           <div>
             <AppButton type="Add" onClick={openNew} />
           </div>
         )}
-
         {/* SEARCH BOX (matches Figma layout you showed) */}
+        {/* TODO: In future if need to add this customClassNameForSearchField type of class then we use object type instead of string */}
         {globalSearchOption !== false && (
           <div className="w-full lg:max-w-26rem lg:w-auto md:w-auto sm:w-auto mt-2 md:mt-0 md:ml-2">
-            <div className="flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2">
+            <div
+              className={`flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2 ${customClassNameForSearchField}`}>
               <span className="p-input-icon-left flex-1 ">
                 <i className="pi pi-search text-sm md:text-base" />
                 <InputText
@@ -1015,10 +1013,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               {/* RIGHT: SQUARE ASTERISK BOX */}
               <div
                 className={conditionClassNames(
-                  "flex align-items-center justify-content-center m-1 border-round-lg mr-2",
-                  {
-                    "border-1 border-gray-300": isNormalIntensity(), // light border when OFF
-                  }
+                  "flex align-items-center justify-content-center m-1"
                 )}
                 style={{ height: "100%" }}>
                 <Button
@@ -1026,15 +1021,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   icon="pi pi-asterisk"
                   className={conditionClassNames("p-button-sm", {
                     // normal mode: subtle, text-style
-                    "p-button-text border-none shadow-none text-sm":
+                    "p-button-outlined shadow-none text-sm":
                       isNormalIntensity(),
                   })}
-                  style={{
-                    padding: "6px",
-                    fontSize: "12px",
-                    height: "24px",
-                    width: "24px",
-                  }}
                   tooltip={
                     !isNormalIntensity()
                       ? `Wildcard search OFF
@@ -1054,7 +1043,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             </div>
           </div>
         )}
-
         {componentNameForSelectingColumns && filterService && (
           <>
             {/* Figma-style red Manage Columns button */}

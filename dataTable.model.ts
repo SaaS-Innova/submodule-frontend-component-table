@@ -104,6 +104,7 @@ export interface IGenericDataTableProps {
   paginatorPosition?: "top" | "bottom" | "both";
   onClickFilter?: () => void;
   showFilterButton?: boolean;
+  customClassNameForSearchField?: string;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
