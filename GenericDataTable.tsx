@@ -29,7 +29,7 @@ const FILTER_LEVELS = {
 };
 import { BsReceiptCutoff } from "react-icons/bs";
 import { OverlayPanel } from "primereact/overlaypanel";
-import { InputSwitch } from "primereact/inputswitch";
+import { Checkbox } from "primereact/checkbox";
 const SORT_MODE_MULTIPLE = "multiple";
 
 const GenericDataTable = (props: IGenericDataTableProps) => {
@@ -145,6 +145,24 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
     FILTER_LEVELS.NORMAL_SEARCH
   );
+  // State for column search and select all
+  const [columnSearchValue, setColumnSearchValue] = useState("");
+  const allColumnsSelected = columns
+    .filter((col) => col.hidden !== true)
+    .every((col) => visibleColumns.some((vc: any) => vc.field === col.field));
+
+  const toggleSelectAllColumns = () => {
+    const filteredColumns = columns.filter((col) => col.hidden !== true);
+    if (allColumnsSelected) {
+      setVisibleColumns([]);
+      onColumnToggle({ value: [] } as unknown as MultiSelectChangeEvent);
+    } else {
+      setVisibleColumns(filteredColumns);
+      onColumnToggle({
+        value: filteredColumns,
+      } as unknown as MultiSelectChangeEvent);
+    }
+  };
   const [selectedSortData, setSelectedSortData] = useState<IColumnSort>({
     field: sortField ?? columns[0]?.field,
     order: sortOrder ?? 1,
@@ -861,9 +879,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             {headerText}
           </span>
 
-          {typeof totalRecordCount === "number" && (
-            <span
-              className="
+          {paginatorPosition !== "both" &&
+            typeof totalRecordCount === "number" && (
+              <span
+                className="
               inline-flex
               align-items-center
               px-2
@@ -872,14 +891,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               text-xs
               font-medium
             "
-              style={{
-                backgroundColor: "var(--primary-color)",
-                color: "var(--primary-color-text)",
-              }}
-            >
-              {totalRecordCount.toLocaleString()} {entityName ?? "records"}
-            </span>
-          )}
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--primary-color-text)",
+                }}>
+                {`${totalRecordCount.toLocaleString()} ${
+                  entityName ?? "Items"
+                }`}
+              </span>
+            )}
         </div>
       )}
       <div className="flex justify-content-between">
@@ -1000,8 +1020,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                     "border-1 border-gray-300": isNormalIntensity(), // light border when OFF
                   }
                 )}
-                style={{ height: "100%" }}
-              >
+                style={{ height: "100%" }}>
                 <Button
                   type="button"
                   icon="pi pi-asterisk"
@@ -1009,8 +1028,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                     // normal mode: subtle, text-style
                     "p-button-text border-none shadow-none text-sm":
                       isNormalIntensity(),
-                    // wild search ON: solid danger button (red square)
-                    "p-button-danger": !isNormalIntensity(),
                   })}
                   style={{
                     padding: "6px",
@@ -1032,8 +1049,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                         ? FILTER_LEVELS.WILD_SEARCH
                         : FILTER_LEVELS.NORMAL_SEARCH
                     );
-                  }}
-                />
+                  }}></Button>
               </div>
             </div>
           </div>
@@ -1063,24 +1079,43 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             <OverlayPanel
               ref={manageColumnsPanelRef}
               dismissable
-              onHide={() => setIsManageColumnsOpen(false)}
-              style={{
-                borderRadius: "8px",
-              }}
-            >
+              onHide={() => setIsManageColumnsOpen(false)}>
               <div className="p-divider p-component p-divider-horizontal mb-1" />
 
               <div
                 className="flex flex-column gap-2"
                 style={{
                   minWidth: "220px",
-                  maxHeight: "440px",
+                  maxHeight: "260px",
                   overflowY: "auto",
                   paddingRight: "0.5rem",
-                }}
-              >
+                }}>
+                {/* Search bar for columns */}
+                <div className="my-2">
+                  <InputText
+                    value={columnSearchValue}
+                    onChange={(e) => setColumnSearchValue(e.target.value)}
+                    placeholder="Search columns..."
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+                <div className="flex align-items-center mb-2 px-1 py-1">
+                  <Checkbox
+                    inputId="selectAllColumns"
+                    checked={allColumnsSelected}
+                    onChange={toggleSelectAllColumns}
+                  />
+                  <label htmlFor="selectAllColumns" className="ml-2 font-bold">
+                    All
+                  </label>
+                </div>
                 {columns
                   .filter((col) => col.hidden !== true)
+                  .filter((col) =>
+                    col.header
+                      ?.toLowerCase()
+                      .includes(columnSearchValue.toLowerCase())
+                  )
                   .map((col) => {
                     const isVisible = visibleColumns.some(
                       (vc) => vc.field === col.field
@@ -1099,26 +1134,18 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       transition-colors
                       surface-overlay
                       hover:surface-hover
-                    "
-                      >
-                        {/* label can wrap */}
-                        <span
-                          className="white-space-normal mr-1"
-                          style={{ flex: 1 }}
-                        >
-                          {col.header}
-                        </span>
-
-                        <InputSwitch
+                    ">
+                        <Checkbox
                           checked={isVisible}
                           onChange={() =>
                             handleColumnSwitchToggle(col, isVisible)
                           }
-                          style={{
-                            height: "20px",
-                            width: "40px",
-                          }}
                         />
+                        <span
+                          className="white-space-normal ml-2"
+                          style={{ flex: 1 }}>
+                          {col.header}
+                        </span>
                       </div>
                     );
                   })}
@@ -1203,13 +1230,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     const isSelected = rowData?.id === selectedRecordId;
     return (
       <Button
-        icon="pi pi-eye"
+        icon="pi pi-desktop"
         outlined
         className="p-button-sm"
         severity={isSelected ? "danger" : "secondary"}
         style={{
-          width: "24px",
-          height: "24px",
+          width: "2rem",
+          height: "2.1rem",
           padding: "0rem",
           backgroundColor: isSelected
             ? "color-mix(in srgb, var(--primary-color) 15%, transparent)"
@@ -1217,7 +1244,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         }}
         pt={{
           icon: {
-            style: { fontSize: "15px" },
+            style: { fontSize: "1rem" },
           },
         }}
         onClick={(event) => handleClickIcon(rowData, event)}
@@ -1228,8 +1255,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const emptyMessageTemplate = () => (
     <div
       className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
-      style={{ color: "#6c757d" }}
-    >
+      style={{ color: "#6c757d" }}>
       <img
         src={noResultFoundImage}
         alt="No Results Found"
@@ -1281,6 +1307,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     }
   };
 
+  const paginatorCssClass = "var(--primary-color)";
   return (
     <div
       className="surface-card border-1 border-gray-300 border-round-2xl"
@@ -1288,39 +1315,29 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         padding: "3px",
         borderRadius: "12px",
         overflow: "hidden",
-      }}
-    >
+      }}>
       <DataTable
         className={`${classNames}`}
         pt={{
           paginator: {
-            root: {
-              style: {
-                borderBottom: "none",
-              },
-            },
             prevPageButton: {
               style: {
-                border: "1px solid var(--primary-color)",
-                color: "var(--primary-color)",
+                color: paginatorCssClass,
               },
             },
             nextPageButton: {
               style: {
-                border: "1px solid var(--primary-color)",
-                color: "var(--primary-color)",
+                color: paginatorCssClass,
               },
             },
             firstPageButton: {
               style: {
-                border: "1px solid var(--primary-color)",
-                color: "var(--primary-color)",
+                color: paginatorCssClass,
               },
             },
             lastPageButton: {
               style: {
-                border: "1px solid var(--primary-color)",
-                color: "var(--primary-color)",
+                color: paginatorCssClass,
               },
             },
           },
@@ -1363,7 +1380,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         sortMode={sortMode ?? "single"}
         paginatorLeft={
           <span className="text-sm text-gray-600">
-            Showing {startRecord}–{endRecord} of {total} records
+            Showing {startRecord}–{endRecord} of {total} Items
           </span>
         }
         sortField={selectedSortData.field}
@@ -1400,9 +1417,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onFilter={onFilter}
         onSort={onSort}
         multiSortMeta={multiSortMeta}
-        rowGroupHeaderTemplate={rowGroupHeaderTemplate}
         rowGroupFooterTemplate={rowGroupFooterTemplate}
-      >
+        rowGroupHeaderTemplate={rowGroupHeaderTemplate}>
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
         )}
@@ -1431,8 +1447,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column
             rowEditor
             headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}
-          ></Column>
+            bodyStyle={{ textAlign: "center" }}></Column>
         )}
         {isColumnDefined && actionBodyTemplate && !dataLoading && (
           <Column className="action-column" body={actionBodyTemplate}></Column>
