@@ -48,7 +48,7 @@ export interface IGenericDataTableProps {
   selectionMode?: null | "multiple" | "checkbox";
   selectedRecords?: any;
   handleCheckBoxSelectionEvent?: (
-    e: DataTableSelectionMultipleChangeEvent<any>
+    e: DataTableSelectionMultipleChangeEvent<any>,
   ) => void;
   clearFilterButton?: boolean;
   scrollable?: boolean;
@@ -76,7 +76,7 @@ export interface IGenericDataTableProps {
   handleDropdownChange?: (e: { label: string; value: any }) => void;
   rowClassName?: (
     data: DataTableRowData<any>,
-    options: DataTableRowClassNameOptions<any>
+    options: DataTableRowClassNameOptions<any>,
   ) => object | string;
   expandedRows?: any;
   onRowToggle?: any;
@@ -104,7 +104,7 @@ export interface IGenericDataTableProps {
   paginatorPosition?: "top" | "bottom" | "both";
   onClickFilter?: () => void;
   showFilterButton?: boolean;
-  customClassNameForSearchField?: string;
+  customClassName?: any;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

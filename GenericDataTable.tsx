@@ -103,7 +103,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     paginatorPosition,
     onClickFilter,
     showFilterButton,
-    customClassNameForSearchField,
+    customClassName,
   } = props;
 
   const {
@@ -144,7 +144,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [isManageColumnsOpen, setIsManageColumnsOpen] = useState(false);
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
-    FILTER_LEVELS.NORMAL_SEARCH
+    FILTER_LEVELS.NORMAL_SEARCH,
   );
   // State for column search and select all
   const [columnSearchValue, setColumnSearchValue] = useState("");
@@ -202,11 +202,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           setVisibleColumns(columns);
         }
       });
-    }, 250)
+    }, 250),
   );
   const updateVisibleColumns = (res: IColumn[], columns: IColumn[]) => {
     let cols = columns.filter((col: IColumn) =>
-      res.some((resCol: IColumn) => resCol.field === col.field)
+      res.some((resCol: IColumn) => resCol.field === col.field),
     );
     setVisibleColumns(cols);
   };
@@ -312,7 +312,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       ) {
         setDataTableValueBouncing.current(
           componentNameForSelectingColumns,
-          columns
+          columns,
         );
       } else {
         setVisibleColumns(columns);
@@ -415,7 +415,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
     if (globalFilterValue) {
       filterValue.push(
-        `${t("components.genericDataTable.globalSearch")}: ${globalFilterValue}`
+        `${t("components.genericDataTable.globalSearch")}: ${globalFilterValue}`,
       );
     }
     return filterValue.length > 0 ? filterValue.join(", ") : null;
@@ -428,7 +428,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     pageCount: number,
     img: HTMLImageElement | null,
     imgWidth: number,
-    imgHeight: number
+    imgHeight: number,
   ) => {
     if (leftCornerDataPrint && Object.entries(leftCornerDataPrint).length > 0) {
       doc.setFontSize(10);
@@ -453,7 +453,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         top,
         {
           align: "right",
-        }
+        },
       );
       top += 5;
     }
@@ -474,7 +474,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     doc: any,
     img: any,
     scaledWidth: any,
-    scaledHeight: any
+    scaledHeight: any,
   ) => {
     doc.addImage(img, "PNG", 15, 6, scaledWidth, scaledHeight);
   };
@@ -558,7 +558,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             totalPages, // total pages
             logo ? img : null,
             imgWidth,
-            imgHeight
+            imgHeight,
           );
         }
 
@@ -658,7 +658,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     const selectedColumns = event.value;
 
     let orderedSelectedColumns = columns.filter((col) =>
-      selectedColumns.some((sCol: any) => sCol.field === col.field)
+      selectedColumns.some((sCol: any) => sCol.field === col.field),
     );
     setVisibleColumns(orderedSelectedColumns);
 
@@ -675,20 +675,20 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     if (isStoreSorting) {
       orderedSelectedColumns = updateSortOrder(
         orderedSelectedColumns,
-        selectedSortData
+        selectedSortData,
       );
     }
 
     componentNameForSelectingColumns &&
       filterService?.setComponentValue(
         componentNameForSelectingColumns,
-        orderedSelectedColumns
+        orderedSelectedColumns,
       );
   };
 
   function applySingleSortFilter(
     filters: any[] = [],
-    sort: { field: string; order: "ASC" | "DESC" | number }
+    sort: { field: string; order: "ASC" | "DESC" | number },
   ): any[] {
     const sortField = sort.field;
     const sortOrder = sort.order;
@@ -715,7 +715,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     sortField: string | undefined,
     sortOrder: 1 | 0 | -1 | null | undefined,
     globalFilterValue: string,
-    visibleColumns: { field: string }[]
+    visibleColumns: { field: string }[],
   ) => {
     const transformedFilters =
       transformPrimeNgFilterObjectToArray?.(filters) || [];
@@ -753,7 +753,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       e.sortField,
       e.sortOrder,
       globalFilterValue,
-      visibleColumns
+      visibleColumns,
     );
 
     setFilterSearch?.(updatedFilters);
@@ -766,7 +766,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       componentNameForSelectingColumns &&
         filterService?.setComponentValue(
           componentNameForSelectingColumns,
-          columnsWithUpdatedSortOrder
+          columnsWithUpdatedSortOrder,
         );
     }
   };
@@ -777,7 +777,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       selectedSortData?.field,
       selectedSortData?.order,
       globalFilterValue,
-      visibleColumns
+      visibleColumns,
     );
 
     setFilterSearch?.(updatedFilters);
@@ -826,7 +826,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     // Remove duplicate 'global' field if already present in transformed
     if (transformed) {
       const filteredTransformed = transformed?.filter(
-        (item: any) => item.field !== "global"
+        (item: any) => item.field !== "global",
       );
       const updatedFilters = applySingleSortFilter(filteredTransformed || [], {
         field: selectedSortData?.field,
@@ -984,11 +984,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           </div>
         )}
         {/* SEARCH BOX (matches Figma layout you showed) */}
-        {/* TODO: In future if need to add this customClassNameForSearchField type of class then we use object type instead of string */}
+
         {globalSearchOption !== false && (
           <div className="w-full lg:max-w-26rem lg:w-auto md:w-auto sm:w-auto mt-2 md:mt-0 md:ml-2">
             <div
-              className={`flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2 ${customClassNameForSearchField}`}>
+              className={`flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2 ${customClassName?.searchField ?? ""}`}>
               <span className="p-input-icon-left flex-1 ">
                 <i className="pi pi-search text-sm md:text-base" />
                 <InputText
@@ -1013,7 +1013,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
               {/* RIGHT: SQUARE ASTERISK BOX */}
               <div
                 className={conditionClassNames(
-                  "flex align-items-center justify-content-center m-1"
+                  "flex align-items-center justify-content-center m-1",
                 )}
                 style={{ height: "100%" }}>
                 <Button
@@ -1036,7 +1036,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                     setGlobalSearchThreshold(
                       isNormalIntensity()
                         ? FILTER_LEVELS.WILD_SEARCH
-                        : FILTER_LEVELS.NORMAL_SEARCH
+                        : FILTER_LEVELS.NORMAL_SEARCH,
                     );
                   }}></Button>
               </div>
@@ -1099,11 +1099,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   .filter((col) =>
                     col.header
                       ?.toLowerCase()
-                      .includes(columnSearchValue.toLowerCase())
+                      .includes(columnSearchValue.toLowerCase()),
                   )
                   .map((col) => {
                     const isVisible = visibleColumns.some(
-                      (vc) => vc.field === col.field
+                      (vc) => vc.field === col.field,
                     );
                     return (
                       <div
@@ -1146,7 +1146,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   "p-button-lg text-base border-round-lg py-2",
                   {
                     "p-button-outlined": !isManageColumnsOpen,
-                  }
+                  },
                 )}
                 onClick={onClickFilter}
               />
@@ -1190,7 +1190,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   const handleClickIcon = (
     rowData: any,
-    event: React.MouseEvent<HTMLElement, MouseEvent>
+    event: React.MouseEvent<HTMLElement, MouseEvent>,
   ) => {
     const keyField = dataKey ?? "id";
     setSelectedRecordId(rowData[keyField]);
@@ -1217,7 +1217,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       <Button
         icon="pi pi-desktop"
         outlined
-        className="p-button-sm"
+        className={`p-button-sm ${customClassName?.desktopIcon ?? ""}`}
         severity={isSelected ? "danger" : "secondary"}
         style={{
           width: "2rem",
@@ -1275,8 +1275,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     dataLoading && isColumnDefined
       ? initialValue
       : totalCount
-      ? value
-      : customGlobalFilter(value, globalFilterValue);
+        ? value
+        : customGlobalFilter(value, globalFilterValue);
 
   const total = totalCount ?? filteredData?.length ?? 0;
 
