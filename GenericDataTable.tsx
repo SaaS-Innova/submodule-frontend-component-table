@@ -104,6 +104,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     onClickFilter,
     showFilterButton,
     customClassName,
+    isShowTotalRecordCountInHeader = true,
   } = props;
 
   const {
@@ -880,7 +881,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             {headerText}
           </span>
 
-          {paginatorPosition !== "both" &&
+          {isShowTotalRecordCountInHeader &&
             typeof totalRecordCount === "number" && (
               <span
                 className="

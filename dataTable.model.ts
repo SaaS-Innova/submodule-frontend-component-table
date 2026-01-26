@@ -105,6 +105,7 @@ export interface IGenericDataTableProps {
   onClickFilter?: () => void;
   showFilterButton?: boolean;
   customClassName?: any;
+  isShowTotalRecordCountInHeader?: boolean;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
