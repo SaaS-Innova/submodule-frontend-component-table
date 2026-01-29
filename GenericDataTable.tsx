@@ -1275,7 +1275,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const finalValues =
     dataLoading && isColumnDefined
       ? initialValue
-      : customGlobalFilter(value, globalFilterValue);
+      : totalCount
+        ? value
+        : customGlobalFilter(value, globalFilterValue);
 
   const total = totalCount ?? filteredData?.length ?? 0;
 
