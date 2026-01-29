@@ -1345,7 +1345,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         rows={rowsPerPage}
         header={displayHeaderSection !== false && header}
         totalRecords={totalRecordCount ?? undefined}
-        lazy={totalCount ? true : false} //TODO : If we provide totalRecordCount , then pagination and sort not working so need to look into it
         onPage={handlePage}
         dataKey={dataKey ?? "id"}
         rowHover={rowHover ?? true}
