@@ -144,6 +144,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [visibleColumns, setVisibleColumns] = useState<IColumn[]>([]);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [isManageColumnsOpen, setIsManageColumnsOpen] = useState(false);
+  const [columnFilterData, setColumnFilterData] = useState([])
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
     FILTER_LEVELS.NORMAL_SEARCH,
   );
@@ -782,6 +783,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     );
 
     setFilterSearch?.(updatedFilters);
+    
     setFilters((prev) => {
       return {
         ...prev,
@@ -871,7 +873,17 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     } as unknown as MultiSelectChangeEvent);
   };
 
-  const totalRecordCount = !totalCount ? filteredData?.length : totalCount;
+  // Check if any filters are active
+  const hasActiveFilters = globalFilterValue || Object.keys(filters).some(key => {
+    if (key === 'global') return false;
+    const filter = (filters as any)[key];
+    return filter?.constraints?.some((c: any) => c.value !== null) || 
+           (filter?.value && filter?.value?.length > 0);
+  });
+
+  // Use filtered data length when filters are active, otherwise use totalCount prop
+  const totalRecordCount = (!totalCount  ? filteredData?.length : totalCount);
+    
   const header = (
     <div className="flex flex-row flex-wrap align-items-center justify-content-between px-3 py-2">
       {/* LEFT: TITLE + COUNT PILL */}
@@ -1004,9 +1016,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                     }
                     debounceTimeoutRef.current = setTimeout(() => {
                       handleGlobalSearch(e.target.value);
-                    }, 1000);
+                    }, 1000);                    
+                    setFilteredData(customGlobalFilter(columnFilterData, e.target.value))
 
-                    setFilteredData(customGlobalFilter(value, e.target.value));
+                    if(!e.target.value){                      
+                    setFilteredData(columnFilterData)
+                    }
                   }}
                 />
               </span>
@@ -1279,6 +1294,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         ? value
         : customGlobalFilter(value, globalFilterValue);
 
+  useEffect(() => {
+    if(finalValues?.length>0){    
+      setFilteredData(hasActiveFilters ? customGlobalFilter(columnFilterData, globalFilterValue) : finalValues);
+    }
+  
+  }, [value,hasActiveFilters])
+  
+  
+
   const total = totalCount ?? filteredData?.length ?? 0;
 
   const startRecord = total === 0 ? 0 : first + 1;
@@ -1394,11 +1418,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         reorderableColumns={reorderableColumns}
         reorderableRows={reorderableRows}
         onValueChange={(value) => {
+          setColumnFilterData(value as any);
           setFilteredData(value as any);
         }}
         onRowReorder={(e) => {
           onRowReorder && onRowReorder(e);
         }}
+        
         onFilter={onFilter}
         onSort={onSort}
         multiSortMeta={multiSortMeta}
