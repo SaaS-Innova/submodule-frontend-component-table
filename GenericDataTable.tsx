@@ -27,6 +27,64 @@ const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
 };
+
+// Helper function to apply column filters to data manually
+const applyColumnFilters = (data: any[], filters: any, filterFields: string[]): any[] => {
+  try {
+    if (!data || data.length === 0) return data || [];
+    if (!filters || !filterFields || filterFields.length === 0) return data;
+    
+    return data.filter((item) => {
+      if (!item) return false;
+      
+      return filterFields.every((field) => {
+        try {
+          const filter = filters[field];
+          if (!filter) return true;
+          
+          const itemValue = _.get(item, field);
+          
+          // Handle constraints-based filters
+          if (filter.constraints && Array.isArray(filter.constraints)) {
+            return filter.constraints.every((constraint: any) => {
+              try {
+                if (constraint.value === null || constraint.value === undefined || constraint.value === '') {
+                  return true;
+                }
+                const matchMode = constraint.matchMode as keyof typeof FilterService.filters;
+                const filterFn = FilterService.filters[matchMode];
+                if (typeof filterFn !== 'function') return true;
+                return filterFn(itemValue, constraint.value) ?? true;
+              } catch {
+                return true; // Don't filter out on error
+              }
+            });
+          }
+          
+          if (filter.value !== null && filter.value !== undefined) {
+            if (filter.matchMode === 'treeColumnFilter') {
+              return true; // Custom filter handled elsewhere
+            }
+            try {
+              const matchMode = (filter.matchMode || FilterMatchMode.CONTAINS) as keyof typeof FilterService.filters;
+              const filterFn = FilterService.filters[matchMode];
+              if (typeof filterFn !== 'function') return true;
+              return filterFn(itemValue, filter.value) ?? true;
+            } catch {
+              return true;
+            }
+          }
+          
+          return true;
+        } catch {
+          return true; 
+        }
+      });
+    });
+  } catch (error) {
+    return data || []; 
+  }
+};
 import { BsReceiptCutoff } from "react-icons/bs";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { Checkbox } from "primereact/checkbox";
@@ -213,11 +271,14 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     setVisibleColumns(cols);
   };
   const customGlobalFilter = (data: any[], value: string) => {
-    if (data && value) {
+    try {
+      if (!data || !Array.isArray(data)) return [];
+      if (!value || typeof value !== 'string') return data;
+      
       const distance = 2000 / globalSearchThreshold;
       const fuseOptionsForGlobalFilter = {
         keys:
-          globalFilterFields || dynamicColumns?.map((col) => col.props.field),
+          globalFilterFields || dynamicColumns?.map((col) => col?.props?.field).filter(Boolean) || [],
         includeScore: true,
         threshold: globalSearchThreshold,
         distance: distance,
@@ -226,9 +287,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       const fuse = new Fuse(data, fuseOptionsForGlobalFilter);
       const searchData = fuse.search(value).map((data) => data.item);
       setDocumentCount && setDocumentCount(searchData.length);
-      return fuse.search(value).map((data) => data.item);
+      return searchData;
+    } catch (error) {
+      return data || []; 
     }
-    return data;
   };
 
   const bodyTemplate = () => {
@@ -570,15 +632,19 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const exportPdf = (filteredData: any) => {
-    const parsedColumns = visibleColumns.map((column: IColumn) => ({
-      title: capitalizeFirstLetter(column?.header),
-      dataKey: column.field,
-    }));
-    const visibleColumnsData = getVisibleColumnsListData(filteredData);
-    if (companyLogoBase64) {
-      savePdf(parsedColumns, visibleColumnsData, companyLogoBase64);
-    } else {
-      savePdf(parsedColumns, visibleColumnsData);
+    try {
+      const parsedColumns = visibleColumns.map((column: IColumn) => ({
+        title: capitalizeFirstLetter(column?.header),
+        dataKey: column.field,
+      }));
+      const visibleColumnsData = getVisibleColumnsListData(filteredData || []);
+      if (companyLogoBase64) {
+        savePdf(parsedColumns, visibleColumnsData, companyLogoBase64);
+      } else {
+        savePdf(parsedColumns, visibleColumnsData);
+      }
+    } catch (error) {
+      console.error('Error in exportPdf:', error);
     }
   };
   const exportExcel = async () => {
@@ -874,12 +940,19 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   // Check if any filters are active
-  const hasActiveFilters = globalFilterValue || Object.keys(filters).some(key => {
-    if (key === 'global') return false;
-    const filter = (filters as any)[key];
-    return filter?.constraints?.some((c: any) => c.value !== null) || 
-           (filter?.value && filter?.value?.length > 0);
-  });
+  const hasActiveFilters = useMemo(() => {
+    try {
+      return Object.keys(filters || {}).some(key => {
+        if (key === 'global') return false;
+        const filter = (filters as any)?.[key];
+        if (!filter) return false;
+        return filter?.constraints?.some((c: any) => c?.value !== null && c?.value !== undefined && c?.value !== '') || 
+               (filter?.value && (Array.isArray(filter.value) ? filter.value.length > 0 : true));
+      });
+    } catch {
+      return false;
+    }
+  }, [filters]);
 
   // Use filtered data length when filters are active, otherwise use totalCount prop
   const totalRecordCount = (!totalCount  ? filteredData?.length : totalCount);
@@ -986,7 +1059,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             tooltipOptions={tooltipOptions}
             className="p-button-outlined p-button-secondary"
             onClick={() =>
-              onClickReadingReceipt(filteredData.map((item) => item.id))
+              onClickReadingReceipt((filteredData || []).map((item) => item?.id).filter(Boolean))
             }
           />
         )}
@@ -1009,18 +1082,36 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   placeholder={t("components.genericDataTable.placeholder")}
                   className="p-inputtext-md md:p-inputtext-lg w-full border-none shadow-none text-lg"
                   onChange={(e) => {
-                    setGlobalFilterValue(e.target.value);
+                    try {
+                      const newValue = e.target.value;
+                      setGlobalFilterValue(newValue);
 
-                    if (debounceTimeoutRef.current) {
-                      clearTimeout(debounceTimeoutRef.current);
-                    }
-                    debounceTimeoutRef.current = setTimeout(() => {
-                      handleGlobalSearch(e.target.value);
-                    }, 1000);                    
-                    setFilteredData(customGlobalFilter(columnFilterData, e.target.value))
-
-                    if(!e.target.value){                      
-                    setFilteredData(columnFilterData)
+                      if (debounceTimeoutRef.current) {
+                        clearTimeout(debounceTimeoutRef.current);
+                      }
+                      debounceTimeoutRef.current = setTimeout(() => {
+                        handleGlobalSearch(newValue);
+                      }, 1000);             
+                      
+                      if(newValue) {
+                        // Apply global search to data (use columnFilterData if column filters are active)
+                        const dataToFilter = (columnFilterData && columnFilterData.length > 0) ? columnFilterData : (value || []);
+                        setFilteredData(customGlobalFilter(dataToFilter, newValue));
+                      } else if (hasActiveFilters) {
+                        // Global search cleared but column filters are active
+                        // Manually apply column filters to original data
+                        const filterFields = visibleColumns.map(col => col.field).filter(Boolean);
+                        const columnFiltered = applyColumnFilters(value || [], filters, filterFields);
+                        setFilteredData(columnFiltered);
+                        setColumnFilterData(columnFiltered as any);
+                      } else {
+                        // No column filters, no global search - show all data
+                        setFilteredData(value || []);
+                      }
+                    } catch (error) {
+                      console.error('Error in global search onChange:', error);
+                      // Reset to safe state on error
+                      setFilteredData(value || []);
                     }
                   }}
                 />
@@ -1295,14 +1386,30 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         : customGlobalFilter(value, globalFilterValue);
 
   useEffect(() => {
-    if(finalValues?.length>0){    
-      setFilteredData(hasActiveFilters ? customGlobalFilter(columnFilterData, globalFilterValue) : finalValues);
+    try {
+      // Only set filteredData when no column filters are active
+      // When column filters ARE active, let onValueChange handle it (it will fire after DataTable re-filters)
+      if (hasActiveFilters) {
+        // Don't set filteredData here - onValueChange handles column-filtered data
+        return;
+      }
+      
+      // No column filters active - set filteredData based on global search
+      if (globalFilterValue) {
+        setFilteredData(customGlobalFilter(value || [], globalFilterValue));
+      } else if (value?.length > 0) {
+        setFilteredData(value);
+      } else {
+        setFilteredData([]);
+      }
+    } catch (error) {
+      console.error('Error in filteredData useEffect:', error);
+      setFilteredData(value || []);
     }
   
-  }, [value,hasActiveFilters])
+  }, [value, hasActiveFilters, globalFilterValue])
   
   
-
   const total = totalCount ?? filteredData?.length ?? 0;
 
   const startRecord = total === 0 ? 0 : first + 1;
@@ -1418,8 +1525,22 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         reorderableColumns={reorderableColumns}
         reorderableRows={reorderableRows}
         onValueChange={(value) => {
-          setColumnFilterData(value as any);
-          setFilteredData(value as any);
+          try {
+            setFilteredData((value as any) || []);
+            
+            // Also update columnFilterData for reference
+            if(value && value.length > 0){
+              if (typeof value[0] === "object" && value[0] !== null) {
+                if(Object.keys(value[0]).length > 1){
+                  setColumnFilterData(value as any);
+                }
+              }
+            } else {
+              setColumnFilterData((value as any) || []); 
+            }
+          } catch (error) {
+            setFilteredData([]);
+          }
         }}
         onRowReorder={(e) => {
           onRowReorder && onRowReorder(e);
