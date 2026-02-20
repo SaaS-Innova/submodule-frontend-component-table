@@ -106,6 +106,7 @@ export interface IGenericDataTableProps {
   showFilterButton?: boolean;
   customClassName?: any;
   isShowTotalRecordCountInHeader?: boolean;
+  headerColumnGroup?: React.ReactNode;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

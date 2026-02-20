@@ -163,6 +163,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     showFilterButton,
     customClassName,
     isShowTotalRecordCountInHeader = true,
+    headerColumnGroup,
   } = props;
 
   const {
@@ -1551,6 +1552,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         multiSortMeta={multiSortMeta}
         rowGroupFooterTemplate={rowGroupFooterTemplate}
         rowGroupHeaderTemplate={rowGroupHeaderTemplate}>
+        headerColumnGroup={headerColumnGroup}
+      >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
         )}
