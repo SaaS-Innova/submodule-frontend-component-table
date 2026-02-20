@@ -1546,12 +1546,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onRowReorder={(e) => {
           onRowReorder && onRowReorder(e);
         }}
-        
         onFilter={onFilter}
         onSort={onSort}
         multiSortMeta={multiSortMeta}
         rowGroupFooterTemplate={rowGroupFooterTemplate}
-        rowGroupHeaderTemplate={rowGroupHeaderTemplate}>
+        rowGroupHeaderTemplate={rowGroupHeaderTemplate}
         headerColumnGroup={headerColumnGroup}
       >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
