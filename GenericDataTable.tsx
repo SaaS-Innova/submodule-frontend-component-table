@@ -164,6 +164,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     customClassName,
     isShowTotalRecordCountInHeader = true,
     headerColumnGroup,
+    footerColumnGroup,
   } = props;
 
   const {
