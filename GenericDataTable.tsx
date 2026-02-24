@@ -1552,6 +1552,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         rowGroupFooterTemplate={rowGroupFooterTemplate}
         rowGroupHeaderTemplate={rowGroupHeaderTemplate}
         headerColumnGroup={headerColumnGroup}
+        footerColumnGroup={footerColumnGroup}
       >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
