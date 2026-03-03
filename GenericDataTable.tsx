@@ -29,60 +29,70 @@ const FILTER_LEVELS = {
 };
 
 // Helper function to apply column filters to data manually
-const applyColumnFilters = (data: any[], filters: any, filterFields: string[]): any[] => {
+const applyColumnFilters = (
+  data: any[],
+  filters: any,
+  filterFields: string[],
+): any[] => {
   try {
     if (!data || data.length === 0) return data || [];
     if (!filters || !filterFields || filterFields.length === 0) return data;
-    
+
     return data.filter((item) => {
       if (!item) return false;
-      
+
       return filterFields.every((field) => {
         try {
           const filter = filters[field];
           if (!filter) return true;
-          
+
           const itemValue = _.get(item, field);
-          
+
           // Handle constraints-based filters
           if (filter.constraints && Array.isArray(filter.constraints)) {
             return filter.constraints.every((constraint: any) => {
               try {
-                if (constraint.value === null || constraint.value === undefined || constraint.value === '') {
+                if (
+                  constraint.value === null ||
+                  constraint.value === undefined ||
+                  constraint.value === ""
+                ) {
                   return true;
                 }
-                const matchMode = constraint.matchMode as keyof typeof FilterService.filters;
+                const matchMode =
+                  constraint.matchMode as keyof typeof FilterService.filters;
                 const filterFn = FilterService.filters[matchMode];
-                if (typeof filterFn !== 'function') return true;
+                if (typeof filterFn !== "function") return true;
                 return filterFn(itemValue, constraint.value) ?? true;
               } catch {
                 return true; // Don't filter out on error
               }
             });
           }
-          
+
           if (filter.value !== null && filter.value !== undefined) {
-            if (filter.matchMode === 'treeColumnFilter') {
+            if (filter.matchMode === "treeColumnFilter") {
               return true; // Custom filter handled elsewhere
             }
             try {
-              const matchMode = (filter.matchMode || FilterMatchMode.CONTAINS) as keyof typeof FilterService.filters;
+              const matchMode = (filter.matchMode ||
+                FilterMatchMode.CONTAINS) as keyof typeof FilterService.filters;
               const filterFn = FilterService.filters[matchMode];
-              if (typeof filterFn !== 'function') return true;
+              if (typeof filterFn !== "function") return true;
               return filterFn(itemValue, filter.value) ?? true;
             } catch {
               return true;
             }
           }
-          
+
           return true;
         } catch {
-          return true; 
+          return true;
         }
       });
     });
   } catch (error) {
-    return data || []; 
+    return data || [];
   }
 };
 import { BsReceiptCutoff } from "react-icons/bs";
@@ -152,7 +162,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     setDocumentCount,
     setFilterSearch,
     onPageChange,
-    totalCount,
+    totalCount, // Total count is required for server-side pagination (without server side pagination, totalCount should not be needed)
     page,
     transformPrimeNgFilterObjectToArray,
     onClickReadingReceipt,
@@ -204,7 +214,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [visibleColumns, setVisibleColumns] = useState<IColumn[]>([]);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [isManageColumnsOpen, setIsManageColumnsOpen] = useState(false);
-  const [columnFilterData, setColumnFilterData] = useState([])
+  const [columnFilterData, setColumnFilterData] = useState([]);
   const [globalSearchThreshold, setGlobalSearchThreshold] = useState(
     FILTER_LEVELS.NORMAL_SEARCH,
   );
@@ -275,12 +285,14 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const customGlobalFilter = (data: any[], value: string) => {
     try {
       if (!data || !Array.isArray(data)) return [];
-      if (!value || typeof value !== 'string') return data;
-      
+      if (!value || typeof value !== "string") return data;
+
       const distance = 2000 / globalSearchThreshold;
       const fuseOptionsForGlobalFilter = {
         keys:
-          globalFilterFields || dynamicColumns?.map((col) => col?.props?.field).filter(Boolean) || [],
+          globalFilterFields ||
+          dynamicColumns?.map((col) => col?.props?.field).filter(Boolean) ||
+          [],
         includeScore: true,
         threshold: globalSearchThreshold,
         distance: distance,
@@ -291,7 +303,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       setDocumentCount && setDocumentCount(searchData.length);
       return searchData;
     } catch (error) {
-      return data || []; 
+      return data || [];
     }
   };
 
@@ -646,7 +658,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         savePdf(parsedColumns, visibleColumnsData);
       }
     } catch (error) {
-      console.error('Error in exportPdf:', error);
+      console.error("Error in exportPdf:", error);
     }
   };
   const exportExcel = async () => {
@@ -851,7 +863,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     );
 
     setFilterSearch?.(updatedFilters);
-    
+
     setFilters((prev) => {
       return {
         ...prev,
@@ -944,12 +956,18 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
     try {
-      return Object.keys(filters || {}).some(key => {
-        if (key === 'global') return false;
+      return Object.keys(filters || {}).some((key) => {
+        if (key === "global") return false;
         const filter = (filters as any)?.[key];
         if (!filter) return false;
-        return filter?.constraints?.some((c: any) => c?.value !== null && c?.value !== undefined && c?.value !== '') || 
-               (filter?.value && (Array.isArray(filter.value) ? filter.value.length > 0 : true));
+        return (
+          filter?.constraints?.some(
+            (c: any) =>
+              c?.value !== null && c?.value !== undefined && c?.value !== "",
+          ) ||
+          (filter?.value &&
+            (Array.isArray(filter.value) ? filter.value.length > 0 : true))
+        );
       });
     } catch {
       return false;
@@ -957,8 +975,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   }, [filters]);
 
   // Use filtered data length when filters are active, otherwise use totalCount prop
-  const totalRecordCount = (!totalCount  ? filteredData?.length : totalCount);
-    
+  const totalRecordCount = !totalCount ? filteredData?.length : totalCount;
+
   const header = (
     <div className="flex flex-row flex-wrap align-items-center justify-content-between px-3 py-2">
       {/* LEFT: TITLE + COUNT PILL */}
@@ -983,7 +1001,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 style={{
                   backgroundColor: "var(--primary-color)",
                   color: "var(--primary-color-text)",
-                }}>
+                }}
+              >
                 {`${totalRecordCount.toLocaleString()} ${
                   entityName ?? "Items"
                 }`}
@@ -1061,7 +1080,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             tooltipOptions={tooltipOptions}
             className="p-button-outlined p-button-secondary"
             onClick={() =>
-              onClickReadingReceipt((filteredData || []).map((item) => item?.id).filter(Boolean))
+              onClickReadingReceipt(
+                (filteredData || []).map((item) => item?.id).filter(Boolean),
+              )
             }
           />
         )}
@@ -1076,7 +1097,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         {globalSearchOption !== false && (
           <div className="w-full lg:max-w-26rem lg:w-auto md:w-auto sm:w-auto mt-2 md:mt-0 md:ml-2">
             <div
-              className={`flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2 ${customClassName?.searchField ?? ""}`}>
+              className={`flex align-items-center w-full border-1 border-round-lg surface-0 border-gray-300 md:my-2 ${customClassName?.searchField ?? ""}`}
+            >
               <span className="p-input-icon-left flex-1 ">
                 <i className="pi pi-search text-sm md:text-base" />
                 <InputText
@@ -1093,17 +1115,28 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       }
                       debounceTimeoutRef.current = setTimeout(() => {
                         handleGlobalSearch(newValue);
-                      }, 1000);             
-                      
-                      if(newValue) {
+                      }, 1000);
+
+                      if (newValue) {
                         // Apply global search to data (use columnFilterData if column filters are active)
-                        const dataToFilter = (columnFilterData && columnFilterData.length > 0) ? columnFilterData : (value || []);
-                        setFilteredData(customGlobalFilter(dataToFilter, newValue));
+                        const dataToFilter =
+                          columnFilterData && columnFilterData.length > 0
+                            ? columnFilterData
+                            : value || [];
+                        setFilteredData(
+                          customGlobalFilter(dataToFilter, newValue),
+                        );
                       } else if (hasActiveFilters) {
                         // Global search cleared but column filters are active
                         // Manually apply column filters to original data
-                        const filterFields = visibleColumns.map(col => col.field).filter(Boolean);
-                        const columnFiltered = applyColumnFilters(value || [], filters, filterFields);
+                        const filterFields = visibleColumns
+                          .map((col) => col.field)
+                          .filter(Boolean);
+                        const columnFiltered = applyColumnFilters(
+                          value || [],
+                          filters,
+                          filterFields,
+                        );
                         setFilteredData(columnFiltered);
                         setColumnFilterData(columnFiltered as any);
                       } else {
@@ -1111,7 +1144,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                         setFilteredData(value || []);
                       }
                     } catch (error) {
-                      console.error('Error in global search onChange:', error);
+                      console.error("Error in global search onChange:", error);
                       // Reset to safe state on error
                       setFilteredData(value || []);
                     }
@@ -1124,7 +1157,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 className={conditionClassNames(
                   "flex align-items-center justify-content-center m-1",
                 )}
-                style={{ height: "100%" }}>
+                style={{ height: "100%" }}
+              >
                 <Button
                   type="button"
                   icon="pi pi-asterisk"
@@ -1147,7 +1181,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                         ? FILTER_LEVELS.WILD_SEARCH
                         : FILTER_LEVELS.NORMAL_SEARCH,
                     );
-                  }}></Button>
+                  }}
+                ></Button>
               </div>
             </div>
           </div>
@@ -1173,7 +1208,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             <OverlayPanel
               ref={manageColumnsPanelRef}
               dismissable
-              onHide={() => setIsManageColumnsOpen(false)}>
+              onHide={() => setIsManageColumnsOpen(false)}
+            >
               <div className="p-divider p-component p-divider-horizontal mb-1" />
 
               <div
@@ -1183,7 +1219,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                   maxHeight: "260px",
                   overflowY: "auto",
                   paddingRight: "0.5rem",
-                }}>
+                }}
+              >
                 {/* Search bar for columns */}
                 <div className="my-2">
                   <InputText
@@ -1228,7 +1265,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                       transition-colors
                       surface-overlay
                       hover:surface-hover
-                    ">
+                    "
+                      >
                         <Checkbox
                           checked={isVisible}
                           onChange={() =>
@@ -1237,7 +1275,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                         />
                         <span
                           className="white-space-normal ml-2"
-                          style={{ flex: 1 }}>
+                          style={{ flex: 1 }}
+                        >
                           {col.header}
                         </span>
                       </div>
@@ -1349,7 +1388,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const emptyMessageTemplate = () => (
     <div
       className="flex flex-column align-items-center justify-content-center py-6 px-4 text-center"
-      style={{ color: "#6c757d" }}>
+      style={{ color: "#6c757d" }}
+    >
       <img
         src={noResultFoundImage}
         alt="No Results Found"
@@ -1395,7 +1435,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         // Don't set filteredData here - onValueChange handles column-filtered data
         return;
       }
-      
+
       // No column filters active - set filteredData based on global search
       if (globalFilterValue) {
         setFilteredData(customGlobalFilter(value || [], globalFilterValue));
@@ -1405,13 +1445,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         setFilteredData([]);
       }
     } catch (error) {
-      console.error('Error in filteredData useEffect:', error);
+      console.error("Error in filteredData useEffect:", error);
       setFilteredData(value || []);
     }
-  
-  }, [value, hasActiveFilters, globalFilterValue])
-  
-  
+  }, [value, hasActiveFilters, globalFilterValue]);
+
   const total = totalCount ?? filteredData?.length ?? 0;
 
   const startRecord = total === 0 ? 0 : first + 1;
@@ -1434,7 +1472,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         padding: "3px",
         borderRadius: "12px",
         overflow: "hidden",
-      }}>
+      }}
+    >
       <DataTable
         className={`${classNames}`}
         pt={{
@@ -1473,6 +1512,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         stripedRows
         size="small"
         ref={dt}
+        lazy={!!totalCount} //IF we use totalCount, then we must be doing server-side pagination, which requires lazy loading
         value={finalValues}
         first={first}
         rows={rowsPerPage}
@@ -1529,16 +1569,16 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onValueChange={(value) => {
           try {
             setFilteredData((value as any) || []);
-            
+
             // Also update columnFilterData for reference
-            if(value && value.length > 0){
+            if (value && value.length > 0) {
               if (typeof value[0] === "object" && value[0] !== null) {
-                if(Object.keys(value[0]).length > 1){
+                if (Object.keys(value[0]).length > 1) {
                   setColumnFilterData(value as any);
                 }
               }
             } else {
-              setColumnFilterData((value as any) || []); 
+              setColumnFilterData((value as any) || []);
             }
           } catch (error) {
             setFilteredData([]);
@@ -1583,7 +1623,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           <Column
             rowEditor
             headerStyle={{ width: "10%", minWidth: "6rem" }}
-            bodyStyle={{ textAlign: "center" }}></Column>
+            bodyStyle={{ textAlign: "center" }}
+          ></Column>
         )}
         {isColumnDefined && actionBodyTemplate && !dataLoading && (
           <Column className="action-column" body={actionBodyTemplate}></Column>
