@@ -245,6 +245,92 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const [first, setFirst] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(rows ?? 30);
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+
+  const getDefaultSortData = (availableColumns: IColumn[] = columns) => ({
+    field: sortField ?? availableColumns[0]?.field,
+    order: sortOrder ?? 1,
+  });
+
+  const normalizeSortMeta = (
+    sorts: Array<Partial<IColumnSort> | null | undefined> = [],
+  ): IColumnSort[] => {
+    return sorts.reduce<IColumnSort[]>((acc, sort) => {
+      if (!sort?.field || (sort.order !== 1 && sort.order !== -1)) {
+        return acc;
+      }
+
+      acc.push({
+        field: sort.field,
+        order: sort.order,
+      });
+      return acc;
+    }, []);
+  };
+
+  const getStoredSortMeta = (storedColumns: IColumn[] = []): IColumnSort[] => {
+    return storedColumns
+      .map((col, index) => ({
+        field: col.field,
+        order: col.sortOrder,
+        sortPriority: col.sortPriority ?? index,
+      }))
+      .filter(
+        (
+          col,
+        ): col is {
+          field: string;
+          order: IColumnSort["order"];
+          sortPriority: number;
+        } => Boolean(col.field) && (col.order === 1 || col.order === -1),
+      )
+      .sort((a, b) => a.sortPriority - b.sortPriority)
+      .map(({ field, order }) => ({
+        field,
+        order,
+      }));
+  };
+
+  const syncSortStateToColumns = (
+    tableColumns: IColumn[] = [],
+    sorts: IColumnSort[] = [],
+  ) => {
+    const normalizedSortMeta = normalizeSortMeta(sorts);
+    const sortMetaByField = new Map(
+      normalizedSortMeta.map((sort, index) => [
+        sort.field,
+        { order: sort.order, sortPriority: index },
+      ]),
+    );
+
+    return tableColumns.map((col) => {
+      const storedSort = sortMetaByField.get(col.field);
+
+      if (storedSort) {
+        return {
+          ...col,
+          sortOrder: storedSort.order,
+          sortPriority: storedSort.sortPriority,
+        };
+      }
+
+      const nextColumn = { ...col };
+      delete nextColumn.sortOrder;
+      delete nextColumn.sortPriority;
+      return nextColumn;
+    });
+  };
+
+  const getActiveSortMeta = () => {
+    return sortMode === SORT_MODE_MULTIPLE
+      ? normalizeSortMeta(multiSortMeta)
+      : normalizeSortMeta([selectedSortData]);
+  };
+
+  const activeSortFields = useMemo(
+    () => new Set(getActiveSortMeta().map((sort) => sort.field)),
+    [sortMode, multiSortMeta, selectedSortData],
+  );
+
   useEffect(() => {
     if (rows !== undefined && rows !== null) {
       setRowsPerPage(rows);
@@ -261,26 +347,46 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     _.debounce((componentName, columns) => {
       filterService?.getComponentValue(componentName).then((res: any) => {
         if (res && res.length > 0) {
-          updateVisibleColumns(res, columns);
+          const restoredColumns = updateVisibleColumns(res, columns);
+          const restoredSortMeta = getStoredSortMeta(res);
 
-          const selectedSortField = res.find((col: IColumn) => col?.sortOrder);
-          if (selectedSortField) {
-            setSelectedSortData({
-              field: selectedSortField?.field,
-              order: selectedSortField?.sortOrder,
-            });
+          if (restoredSortMeta.length > 0) {
+            if (sortMode === SORT_MODE_MULTIPLE) {
+              setMultiSortMeta(restoredSortMeta);
+            }
+            setSelectedSortData(restoredSortMeta[0]);
+          } else if (sortMode === SORT_MODE_MULTIPLE) {
+            setMultiSortMeta(normalizeSortMeta([getDefaultSortData(restoredColumns)]));
           }
         } else {
           setVisibleColumns(columns);
+          if (sortMode === SORT_MODE_MULTIPLE) {
+            setMultiSortMeta(normalizeSortMeta([getDefaultSortData(columns)]));
+          }
         }
       });
     }, 250),
   );
   const updateVisibleColumns = (res: IColumn[], columns: IColumn[]) => {
-    let cols = columns.filter((col: IColumn) =>
-      res.some((resCol: IColumn) => resCol.field === col.field),
-    );
+    const cols = columns
+      .filter((col: IColumn) =>
+        res.some((resCol: IColumn) => resCol.field === col.field),
+      )
+      .map((col: IColumn) => {
+        const storedColumn = res.find(
+          (resCol: IColumn) => resCol.field === col.field,
+        );
+
+        return storedColumn
+          ? {
+              ...col,
+              sortOrder: storedColumn.sortOrder,
+              sortPriority: storedColumn.sortPriority,
+            }
+          : col;
+      });
     setVisibleColumns(cols);
+    return cols;
   };
   const customGlobalFilter = (data: any[], value: string) => {
     try {
@@ -343,7 +449,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const dynamicColumns = useMemo(() => {
     if (visibleColumns) {
       const dynamicColumn = visibleColumns?.map((col) => {
-        const isActiveSort = selectedSortData.field === col.field;
+        const isActiveSort = activeSortFields.has(col.field);
         return (
           <Column
             key={col.field}
@@ -377,7 +483,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       return dynamicColumn;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleColumns, selectedSortData, dataLoading]);
+  }, [visibleColumns, activeSortFields, dataLoading]);
 
   const isColumnDefined = !!(dynamicColumns && dynamicColumns.length > 0);
 
@@ -402,13 +508,8 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
 
   useEffect(() => {
     initFilters();
-    if (sortField && sortMode === SORT_MODE_MULTIPLE) {
-      setMultiSortMeta([
-        {
-          field: sortField,
-          order: sortOrder,
-        },
-      ]);
+    if (sortMode === SORT_MODE_MULTIPLE) {
+      setMultiSortMeta(normalizeSortMeta([getDefaultSortData(columns)]));
     }
   }, []);
 
@@ -723,17 +824,43 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return data;
   };
 
-  const updateSortOrder = (columns: IColumn[], sortData: IColumnSort) => {
-    return columns.map((col) => {
-      if (col.field === sortData.field) {
-        return {
-          field: col.field,
-          header: col.header,
-          sortOrder: sortData.order,
-        };
-      }
-      return col;
+  const toFilterSortOrder = (order: IColumnSort["order"]) => {
+    if (order === 1) {
+      return "ASC";
+    }
+    if (order === -1) {
+      return "DESC";
+    }
+    return undefined;
+  };
+
+  const applySortFilters = (tableFilters: any[] = [], sorts: IColumnSort[] = []) => {
+    const normalizedSortMeta = normalizeSortMeta(sorts);
+    const sortFilters = normalizedSortMeta.map((sort) => {
+      const existingFilter = tableFilters.find(
+        (item) => item.field === sort.field,
+      );
+      const { order, ...rest } = existingFilter || { field: sort.field };
+
+      return {
+        ...rest,
+        field: sort.field,
+        order: toFilterSortOrder(sort.order),
+      };
     });
+
+    const nonSortFilters = tableFilters
+      .filter((item) => item.field !== "global")
+      .filter(
+        (item) =>
+          !normalizedSortMeta.some((sort) => sort.field === item.field),
+      )
+      .map((item) => {
+        const { order, ...rest } = item;
+        return rest;
+      });
+
+    return [...nonSortFilters, ...sortFilters];
   };
 
   const onColumnToggle = (event: MultiSelectChangeEvent) => {
@@ -744,20 +871,32 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     );
     setVisibleColumns(orderedSelectedColumns);
 
+    const visibleFields = new Set(
+      orderedSelectedColumns.map((col: IColumn) => col.field),
+    );
+    const currentSortMeta = getActiveSortMeta();
+    let nextSortMeta = currentSortMeta.filter((sort) =>
+      visibleFields.has(sort.field),
+    );
+
     if (
-      orderedSelectedColumns.some((col) => col.field !== selectedSortData.field)
+      currentSortMeta.length > 0 &&
+      nextSortMeta.length === 0 &&
+      orderedSelectedColumns.length > 0
     ) {
-      setSelectedSortData({
-        field: sortField ?? orderedSelectedColumns[0]?.field,
-        order: sortOrder ?? 1,
-      });
+      nextSortMeta = normalizeSortMeta([getDefaultSortData(orderedSelectedColumns)]);
     }
 
-    // Update the sort order of the selected columns for the store in database
+    if (sortMode === SORT_MODE_MULTIPLE) {
+      setMultiSortMeta(nextSortMeta);
+    }
+
+    setSelectedSortData(nextSortMeta[0] ?? getDefaultSortData(orderedSelectedColumns));
+
     if (isStoreSorting) {
-      orderedSelectedColumns = updateSortOrder(
+      orderedSelectedColumns = syncSortStateToColumns(
         orderedSelectedColumns,
-        selectedSortData,
+        nextSortMeta,
       );
     }
 
@@ -768,44 +907,16 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       );
   };
 
-  function applySingleSortFilter(
-    filters: any[] = [],
-    sort: { field: string; order: "ASC" | "DESC" | number },
-  ): any[] {
-    const sortField = sort.field;
-    const sortOrder = sort.order;
-
-    const updated = filters.map((item) => {
-      if (item.field === sortField) {
-        return { ...item, order: sortOrder };
-      }
-      const { order, ...rest } = item;
-      return rest;
-    });
-    const exists = updated.some((item) => item.field === sortField);
-    if (!exists) {
-      updated.push({
-        field: sortField,
-        order: sortOrder,
-      });
-    }
-    return updated;
-  }
-
   const buildUpdatedFilters = (
     filters: any,
-    sortField: string | undefined,
-    sortOrder: 1 | 0 | -1 | null | undefined,
+    sortMeta: IColumnSort[],
     globalFilterValue: string,
     visibleColumns: { field: string }[],
   ) => {
     const transformedFilters =
       transformPrimeNgFilterObjectToArray?.(filters) || [];
 
-    const updatedFilters = applySingleSortFilter(transformedFilters, {
-      field: sortField ?? "id",
-      order: sortOrder === 1 ? "ASC" : "DESC",
-    });
+    const updatedFilters = applySortFilters(transformedFilters, sortMeta);
 
     if (globalFilterValue) {
       updatedFilters.push({
@@ -825,15 +936,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
 
   const onSort = (e: DataTableStateEvent) => {
-    if (e.multiSortMeta) {
-      setMultiSortMeta(e.multiSortMeta);
+    const updatedSortMeta = normalizeSortMeta(
+      sortMode === SORT_MODE_MULTIPLE
+        ? e.multiSortMeta ?? []
+        : [{ field: e.sortField, order: e.sortOrder }],
+    );
+
+    if (sortMode === SORT_MODE_MULTIPLE) {
+      setMultiSortMeta(updatedSortMeta);
     }
-    setSelectedSortData({ field: e.sortField, order: e.sortOrder });
+    setSelectedSortData({
+      field: e.sortField ?? updatedSortMeta[0]?.field ?? selectedSortData.field,
+      order: e.sortOrder ?? updatedSortMeta[0]?.order ?? null,
+    });
 
     const updatedFilters = buildUpdatedFilters(
       filters,
-      e.sortField,
-      e.sortOrder,
+      updatedSortMeta,
       globalFilterValue,
       visibleColumns,
     );
@@ -841,10 +960,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     setFilterSearch?.(updatedFilters);
 
     if (isStoreSorting) {
-      const columnsWithUpdatedSortOrder = updateSortOrder(visibleColumns, {
-        field: e.sortField,
-        order: e.sortOrder,
-      });
+      const columnsWithUpdatedSortOrder = syncSortStateToColumns(
+        visibleColumns,
+        updatedSortMeta,
+      );
       componentNameForSelectingColumns &&
         filterService?.setComponentValue(
           componentNameForSelectingColumns,
@@ -856,8 +975,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const onFilter = (e: DataTableStateEvent) => {
     const updatedFilters = buildUpdatedFilters(
       e.filters,
-      selectedSortData?.field,
-      selectedSortData?.order,
+      getActiveSortMeta(),
       globalFilterValue,
       visibleColumns,
     );
@@ -905,32 +1023,14 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   };
   const debounceTimeoutRef = useRef<any>(null);
   const handleGlobalSearch = (value: string) => {
-    const transformed = transformPrimeNgFilterObjectToArray?.(filters);
-    // Remove duplicate 'global' field if already present in transformed
-    if (transformed) {
-      const filteredTransformed = transformed?.filter(
-        (item: any) => item.field !== "global",
-      );
-      const updatedFilters = applySingleSortFilter(filteredTransformed || [], {
-        field: selectedSortData?.field,
-        order: selectedSortData?.order === 1 ? "ASC" : "DESC",
-      });
+    const updatedFilters = buildUpdatedFilters(
+      filters,
+      getActiveSortMeta(),
+      value,
+      visibleColumns,
+    );
 
-      setFilterSearch?.([
-        {
-          field: "global",
-          operator: FilterOperator.AND,
-          constraints: [
-            {
-              value: value,
-              matchMode: FilterMatchMode.CONTAINS,
-              filterFields: visibleColumns.map((col) => col.field),
-            },
-          ],
-        },
-        ...updatedFilters,
-      ]);
-    }
+    setFilterSearch?.(updatedFilters);
   };
   const handleColumnSwitchToggle = (column: IColumn, isVisible: boolean) => {
     let selectedColumns: IColumn[];
@@ -1541,8 +1641,12 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             Showing {startRecord}–{endRecord} of {total} Items
           </span>
         }
-        sortField={selectedSortData.field}
-        sortOrder={selectedSortData.order}
+        sortField={
+          sortMode === SORT_MODE_MULTIPLE ? undefined : selectedSortData.field
+        }
+        sortOrder={
+          sortMode === SORT_MODE_MULTIPLE ? undefined : selectedSortData.order
+        }
         breakpoint={responsiveLayout}
         expandableRowGroups={expandableRowGroups}
         isDataSelectable={isRowSelectable}
@@ -1589,7 +1693,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         }}
         onFilter={onFilter}
         onSort={onSort}
-        multiSortMeta={multiSortMeta}
+        multiSortMeta={
+          sortMode === SORT_MODE_MULTIPLE ? multiSortMeta : undefined
+        }
         rowGroupFooterTemplate={rowGroupFooterTemplate}
         rowGroupHeaderTemplate={rowGroupHeaderTemplate}
         headerColumnGroup={headerColumnGroup}
