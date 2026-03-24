@@ -477,6 +477,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
                 style: isActiveSort ? { color: "#EC1241" } : {},
               },
             }}
+            frozen={col.frozen}
           />
         );
       });

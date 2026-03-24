@@ -135,6 +135,7 @@ export interface IColumn {
     | ((options: ColumnFilterElementTemplateOptions) => React.ReactNode);
   onCellEditComplete?: (e: ColumnEvent) => void;
   sortPriority?: number;
+  frozen?: boolean;
 }
 
 export interface IColumnSort {
