@@ -175,6 +175,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     isShowTotalRecordCountInHeader = true,
     headerColumnGroup,
     footerColumnGroup,
+    selectionPageOnly,
   } = props;
 
   const {
@@ -356,7 +357,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             }
             setSelectedSortData(restoredSortMeta[0]);
           } else if (sortMode === SORT_MODE_MULTIPLE) {
-            setMultiSortMeta(normalizeSortMeta([getDefaultSortData(restoredColumns)]));
+            setMultiSortMeta(
+              normalizeSortMeta([getDefaultSortData(restoredColumns)]),
+            );
           }
         } else {
           setVisibleColumns(columns);
@@ -835,7 +838,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     return undefined;
   };
 
-  const applySortFilters = (tableFilters: any[] = [], sorts: IColumnSort[] = []) => {
+  const applySortFilters = (
+    tableFilters: any[] = [],
+    sorts: IColumnSort[] = [],
+  ) => {
     const normalizedSortMeta = normalizeSortMeta(sorts);
     const sortFilters = normalizedSortMeta.map((sort) => {
       const existingFilter = tableFilters.find(
@@ -853,8 +859,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     const nonSortFilters = tableFilters
       .filter((item) => item.field !== "global")
       .filter(
-        (item) =>
-          !normalizedSortMeta.some((sort) => sort.field === item.field),
+        (item) => !normalizedSortMeta.some((sort) => sort.field === item.field),
       )
       .map((item) => {
         const { order, ...rest } = item;
@@ -885,14 +890,18 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       nextSortMeta.length === 0 &&
       orderedSelectedColumns.length > 0
     ) {
-      nextSortMeta = normalizeSortMeta([getDefaultSortData(orderedSelectedColumns)]);
+      nextSortMeta = normalizeSortMeta([
+        getDefaultSortData(orderedSelectedColumns),
+      ]);
     }
 
     if (sortMode === SORT_MODE_MULTIPLE) {
       setMultiSortMeta(nextSortMeta);
     }
 
-    setSelectedSortData(nextSortMeta[0] ?? getDefaultSortData(orderedSelectedColumns));
+    setSelectedSortData(
+      nextSortMeta[0] ?? getDefaultSortData(orderedSelectedColumns),
+    );
 
     if (isStoreSorting) {
       orderedSelectedColumns = syncSortStateToColumns(
@@ -939,7 +948,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const onSort = (e: DataTableStateEvent) => {
     const updatedSortMeta = normalizeSortMeta(
       sortMode === SORT_MODE_MULTIPLE
-        ? e.multiSortMeta ?? []
+        ? (e.multiSortMeta ?? [])
         : [{ field: e.sortField, order: e.sortOrder }],
     );
 
@@ -1671,6 +1680,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         onRowCollapse={onRowCollapse}
         reorderableColumns={reorderableColumns}
         reorderableRows={reorderableRows}
+        selectionPageOnly={selectionPageOnly}
         onValueChange={(value) => {
           try {
             setFilteredData((value as any) || []);

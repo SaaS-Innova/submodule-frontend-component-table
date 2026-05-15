@@ -108,6 +108,7 @@ export interface IGenericDataTableProps {
   isShowTotalRecordCountInHeader?: boolean;
   headerColumnGroup?: React.ReactNode;
   footerColumnGroup?: React.ReactNode;
+  selectionPageOnly?: boolean | undefined;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
