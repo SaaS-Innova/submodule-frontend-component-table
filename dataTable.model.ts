@@ -61,7 +61,7 @@ export interface IGenericDataTableProps {
   rowExpansion?: any;
   rowExpansionTemplate?: any;
   scrollHeight?: string;
-  headerText?: string;
+  headerText?: string | JSX.Element;
   expandableRowGroups?: boolean;
   editMode?: string;
   onRowEditComplete?: any;

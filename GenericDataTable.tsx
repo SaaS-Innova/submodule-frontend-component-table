@@ -736,7 +736,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           top = 15;
           addMetaData(
             doc,
-            headerText ?? "",
+            String(headerText ?? ""),
             page, // current page
             totalPages, // total pages
             logo ? img : null,
