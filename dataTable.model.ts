@@ -104,6 +104,7 @@ export interface IGenericDataTableProps {
   headerColumnGroup?: React.ReactNode;
   footerColumnGroup?: React.ReactNode;
   selectionPageOnly?: boolean | undefined;
+  isDropdownBeforeHeader?: boolean;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

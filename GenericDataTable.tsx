@@ -174,6 +174,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     footerColumnGroup,
     selectionPageOnly,
     headerDropdownComponent,
+    isDropdownBeforeHeader = false,
   } = props;
 
   const {
@@ -1067,6 +1068,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
       {/* LEFT: TITLE + COUNT PILL */}
       {headerText !== undefined && (
         <div className="flex align-items-center gap-2 mb-2 md:mb-0">
+          {isDropdownBeforeHeader &&
+            headerDropdownComponent &&
+            headerDropdownComponent}
           <span className="font-bold text-lg capitalize-first">
             {headerText}
           </span>
@@ -1095,7 +1099,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             )}
         </div>
       )}
-      {headerDropdownComponent && (
+      {!isDropdownBeforeHeader && headerDropdownComponent && (
         <div className="flex justify-content-between">
           {headerDropdownComponent}
         </div>
