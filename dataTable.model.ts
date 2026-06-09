@@ -68,12 +68,7 @@ export interface IGenericDataTableProps {
   onRowEditValidator?: any;
   tableStyle?: any;
   openNew?: () => void;
-  headerDropdown?: {
-    options: any[];
-    placeholder?: string;
-    initialValue?: { label: string; value: string };
-  };
-  handleDropdownChange?: (e: { label: string; value: any }) => void;
+  headerDropdownComponent?: React.ReactNode;
   rowClassName?: (
     data: DataTableRowData<any>,
     options: DataTableRowClassNameOptions<any>,

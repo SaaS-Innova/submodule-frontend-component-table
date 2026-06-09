@@ -12,7 +12,6 @@ import { FilterMatchMode, FilterOperator, FilterService } from "primereact/api";
 import autoTable from "jspdf-autotable";
 import AppButton from "../button/AppButton";
 import { MultiSelectChangeEvent } from "primereact/multiselect";
-import { AutoComplete } from "primereact/autocomplete";
 import { Skeleton } from "primereact/skeleton";
 import _ from "lodash";
 import { useTranslation } from "react-i18next";
@@ -145,8 +144,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     rowClassName,
     expandedRows,
     onRowToggle,
-    headerDropdown,
-    handleDropdownChange,
     globalSearchValue,
     onRowDoubleClick,
     onRowEditInit,
@@ -176,6 +173,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     headerColumnGroup,
     footerColumnGroup,
     selectionPageOnly,
+    headerDropdownComponent,
   } = props;
 
   const {
@@ -210,8 +208,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const dt = useRef<any>(null);
   const manageColumnsPanelRef = useRef<OverlayPanel | null>(null);
   const [rowsExpanded, setRowsExpanded] = useState<any>(null);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [suggestionsList, setSuggestionsList] = useState<any>(null);
   const [visibleColumns, setVisibleColumns] = useState<IColumn[]>([]);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [isManageColumnsOpen, setIsManageColumnsOpen] = useState(false);
@@ -1000,27 +996,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
   };
 
-  const searchList = (event: { query: string }) => {
-    setTimeout(() => {
-      let _suggestionsList: any;
-
-      if (!event.query.trim().length) {
-        if (headerDropdown?.options) {
-          _suggestionsList = [...(headerDropdown?.options ?? [])];
-        }
-      } else {
-        // eslint-disable-next-line
-        _suggestionsList = headerDropdown?.options?.filter((list: any) => {
-          if (list?.label.toLowerCase().startsWith(event.query.toLowerCase())) {
-            return list?.label
-              .toLowerCase()
-              .startsWith(event.query.toLowerCase());
-          }
-        });
-      }
-      setSuggestionsList(_suggestionsList);
-    }, 250);
-  };
   const tooltipOptions: any = {
     position: "bottom",
     style: {
@@ -1120,32 +1095,11 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             )}
         </div>
       )}
-      <div className="flex justify-content-between">
-        {headerDropdown && handleDropdownChange && (
-          <AutoComplete
-            value={selectedItem ?? headerDropdown?.initialValue}
-            suggestions={suggestionsList}
-            completeMethod={searchList}
-            field="label"
-            dropdown
-            dropdownAriaLabel="Select Item"
-            placeholder={headerDropdown?.placeholder ?? "Select Item"}
-            onChange={(e) => {
-              setSelectedItem(e.value);
-            }}
-            onSelect={(e) => {
-              setSelectedItem(e.value);
-              handleDropdownChange(e.value);
-            }}
-            onBlur={(e) => {
-              if (e.target.value !== "") {
-                setSelectedItem(null);
-              }
-            }}
-            className="m-2"
-          />
-        )}
-      </div>
+      {headerDropdownComponent && (
+        <div className="flex justify-content-between">
+          {headerDropdownComponent}
+        </div>
+      )}
       {/* RIGHT: ACTIONS + SEARCH */}
       <div className="flex flex-wrap align-items-center justify-content-end gap-2">
         {/* MANAGE COLUMNS (Figma-style red button + overlay with switches) */}
