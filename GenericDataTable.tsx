@@ -175,6 +175,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     selectionPageOnly,
     headerDropdownComponent,
     isDropdownBeforeHeader = false,
+    exportOverride,
   } = props;
 
   const {
@@ -747,13 +748,23 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
   };
 
+  const getExportRows = (data: any[]): any[] =>
+    exportOverride?.getData ? exportOverride.getData() || [] : data || [];
+
+  const getExportColumns = (): IColumn[] =>
+    exportOverride?.columns ?? visibleColumns;
+
   const exportPdf = (filteredData: any) => {
     try {
-      const parsedColumns = visibleColumns.map((column: IColumn) => ({
+      const exportColumns = getExportColumns();
+      const parsedColumns = exportColumns.map((column: IColumn) => ({
         title: capitalizeFirstLetter(column?.header),
         dataKey: column.field,
       }));
-      const visibleColumnsData = getVisibleColumnsListData(filteredData || []);
+      const visibleColumnsData = getVisibleColumnsListData(
+        getExportRows(filteredData),
+        exportColumns,
+      );
       if (companyLogoBase64) {
         savePdf(parsedColumns, visibleColumnsData, companyLogoBase64);
       } else {
@@ -766,9 +777,13 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
   const exportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(tableName || "Data");
-    const headers = visibleColumns.map((col) => col.header);
+    const exportColumns = getExportColumns();
+    const headers = exportColumns.map((col) => col.header);
     const printCreatedBy = `${currentUser?.first_name} ${currentUser?.last_name}`;
-    const visibleColumnsData = getVisibleColumnsListData(filteredData);
+    const visibleColumnsData = getVisibleColumnsListData(
+      getExportRows(filteredData),
+      exportColumns,
+    );
     const filterValue = getFilterValue(filters);
     let insertionIndex = 1;
     if (leftCornerDataPrint) {
@@ -805,12 +820,15 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     saveAs(new Blob([buffer]), `${tableName ?? "dataTable"}.xlsx`);
   };
 
-  const getVisibleColumnsListData = (columns: IColumn[]) => {
+  const getVisibleColumnsListData = (
+    rows: any[],
+    exportColumns: IColumn[] = visibleColumns,
+  ) => {
     const data: any = [];
-    if (columns) {
-      columns?.forEach((row: any) => {
+    if (rows) {
+      rows?.forEach((row: any) => {
         const rowData: any = [];
-        visibleColumns.forEach((column) => {
+        exportColumns.forEach((column) => {
           const title = column.field;
           const data = _.get(row, title);
           if (data && typeof data === "object" && data !== null) {

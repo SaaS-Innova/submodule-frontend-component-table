@@ -105,6 +105,12 @@ export interface IGenericDataTableProps {
   footerColumnGroup?: React.ReactNode;
   selectionPageOnly?: boolean | undefined;
   isDropdownBeforeHeader?: boolean;
+  // Overrides the columns and/or rows the XLS/PDF exports use; display is
+  // not affected. Omitted parts fall back to the table's visible columns /
+  // filtered rows. `getData` is only called when an export is actually
+  // triggered. Note: overriding the rows bypasses the table's
+  // search/filters.
+  exportOverride?: { columns?: IColumn[]; getData?: () => any[] };
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;
