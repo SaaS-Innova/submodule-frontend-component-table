@@ -1391,9 +1391,6 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     </div>
   );
 
-  //this is use for Skeleton loading
-  const initialValue = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
-
   /*
 
     This event listener is used to open a new window when the icon is clicked.
@@ -1506,12 +1503,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     </div>
   );
 
-  const finalValues =
-    dataLoading && isColumnDefined
-      ? initialValue
-      : totalCount
-        ? value
-        : customGlobalFilter(value, globalFilterValue);
+  const finalValues = totalCount
+    ? value
+    : customGlobalFilter(value, globalFilterValue);
 
   useEffect(() => {
     try {
