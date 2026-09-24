@@ -111,6 +111,9 @@ export interface IGenericDataTableProps {
   // triggered. Note: overriding the rows bypasses the table's
   // search/filters.
   exportOverride?: { columns?: IColumn[]; getData?: () => any[] };
+  matchFooterWithVisibleColumns?: boolean;
+  manageColumnsLabel?: string;
+  manageColumnsIcon?: React.ReactNode;
 }
 interface IvisibleColumnsProps {
   componentNameForSelectingColumns: string;

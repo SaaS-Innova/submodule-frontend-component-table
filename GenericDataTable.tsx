@@ -176,6 +176,9 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     headerDropdownComponent,
     isDropdownBeforeHeader = false,
     exportOverride,
+    matchFooterWithVisibleColumns = false,
+    manageColumnsLabel,
+    manageColumnsIcon,
   } = props;
 
   const {
@@ -436,6 +439,36 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
     });
     return filters;
   }, [visibleColumns]);
+
+  const displayedFooterColumnGroup = useMemo(() => {
+    // Empty until the saved columns are restored; keep the footer whole meanwhile.
+    if (
+      !matchFooterWithVisibleColumns ||
+      visibleColumns.length === 0 ||
+      !React.isValidElement<{ children?: React.ReactNode }>(footerColumnGroup)
+    ) {
+      return footerColumnGroup;
+    }
+    const visibleFields = new Set(visibleColumns.map((col) => col.field));
+    const isCellShown = (cell: React.ReactNode) =>
+      !React.isValidElement<{ field?: string }>(cell) ||
+      !cell.props.field ||
+      visibleFields.has(cell.props.field);
+
+    return React.cloneElement(
+      footerColumnGroup,
+      {},
+      React.Children.map(footerColumnGroup.props.children, (row) =>
+        React.isValidElement<{ children?: React.ReactNode }>(row)
+          ? React.cloneElement(
+              row,
+              {},
+              React.Children.toArray(row.props.children).filter(isCellShown),
+            )
+          : row,
+      ),
+    );
+  }, [footerColumnGroup, matchFooterWithVisibleColumns, visibleColumns]);
 
   // Update filters state with Columns filter
   useEffect(() => {
@@ -1278,8 +1311,10 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
             {/* Figma-style red Manage Columns button */}
             <Button
               type="button"
-              label="Manage Columns"
-              icon={<ColumnsIcon size={16} weight="bold" />}
+              label={manageColumnsLabel ?? "Manage Columns"}
+              icon={
+                manageColumnsIcon ?? <ColumnsIcon size={16} weight="bold" />
+              }
               iconPos="left"
               className={conditionClassNames("p-button-lg text-base py-2", {
                 "p-button-outlined": !isManageColumnsOpen,
@@ -1680,7 +1715,7 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
         rowGroupFooterTemplate={rowGroupFooterTemplate}
         rowGroupHeaderTemplate={rowGroupHeaderTemplate}
         headerColumnGroup={headerColumnGroup}
-        footerColumnGroup={footerColumnGroup}
+        footerColumnGroup={displayedFooterColumnGroup}
       >
         {isColumnDefined && displayCheckBoxesColumn && !dataLoading && (
           <Column selectionMode="multiple" style={{ width: "2.5rem" }} />
