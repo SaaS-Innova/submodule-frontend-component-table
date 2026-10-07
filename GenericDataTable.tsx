@@ -22,6 +22,10 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { capitalizeFirstLetter } from "../../../library/utilities/helperFunction";
 import { ColumnsIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
+import { BsReceiptCutoff, BsGripVertical } from "react-icons/bs";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { Checkbox } from "primereact/checkbox";
+
 const FILTER_LEVELS = {
   NORMAL_SEARCH: 0.05,
   WILD_SEARCH: 0.3,
@@ -94,9 +98,7 @@ const applyColumnFilters = (
     return data || [];
   }
 };
-import { BsReceiptCutoff } from "react-icons/bs";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { Checkbox } from "primereact/checkbox";
+
 const SORT_MODE_MULTIPLE = "multiple";
 
 const GenericDataTable = (props: IGenericDataTableProps) => {
@@ -1738,7 +1740,22 @@ const GenericDataTable = (props: IGenericDataTableProps) => {
           reorderableColumns &&
           reorderableRows &&
           !dataLoading && (
-            <Column rowReorder style={{ width: "3rem" }}></Column>
+            <Column
+              rowReorder
+              rowReorderIcon={(options) => (
+                <span
+                  {...options.iconProps}
+                  className={`${options.iconProps?.className ?? ""} inline-flex cursor-move`}
+                >
+                  <BsGripVertical
+                    size={18}
+                    className="text-400"
+                    style={{ pointerEvents: "none" }}
+                  />
+                </span>
+              )}
+              style={{ width: "3rem" }}
+            ></Column>
           )}
         {isColumnDefined && dynamicColumns}
         {isColumnDefined && editMode && !dataLoading && (
